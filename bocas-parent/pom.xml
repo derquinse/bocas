@@ -50,4 +50,7 @@
 			<artifactId>derquinse-common-test-support</artifactId>
 		</dependency>
 	</dependencies>
+	<modules>
+		<module>bocas</module>
+	</modules>
 </project>
