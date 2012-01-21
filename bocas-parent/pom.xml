@@ -1,0 +1,53 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<artifactId>derquinse-common-project-parent</artifactId>
+		<groupId>net.derquinse</groupId>
+		<version>1.0.16</version>
+	</parent>
+	<groupId>net.derquinse.bocas</groupId>
+	<artifactId>bocas-parent</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>pom</packaging>
+	<name>Derquinse BOCAS :: Parent POM</name>
+	<description>Parent POM for Derquinse BOCAS Project</description>
+	<url>http://code.google.com/p/conquiris/</url>
+	<scm>
+		<connection>scm:svn:http://conquiris.googlecode.com/svn/trunk/conquiris</connection>
+		<developerConnection>scm:svn:https://conquiris.googlecode.com/svn/trunk/conquiris</developerConnection>
+		<url>http://code.google.com/p/conquiris/source/browse/#svn/trunk/conquiris</url>
+	</scm>
+	<properties>
+		<releaseTagBase>https://conquiris.googlecode.com/svn/tags/</releaseTagBase>
+	</properties>
+	<issueManagement>
+		<system>Google Code</system>
+		<url>http://code.google.com/p/bocas/issues/list</url>
+	</issueManagement>
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.apache.lucene</groupId>
+				<artifactId>lucene-core</artifactId>
+				<version>3.5.0</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.lucene</groupId>
+				<artifactId>lucene-analyzers</artifactId>
+				<version>3.5.0</version>
+			</dependency>
+			<dependency>
+				<groupId>org.apache.lucene</groupId>
+				<artifactId>lucene-highlighter</artifactId>
+				<version>3.5.0</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+	<dependencies>
+		<dependency>
+			<groupId>net.derquinse</groupId>
+			<artifactId>derquinse-common-test-support</artifactId>
+		</dependency>
+	</dependencies>
+</project>
