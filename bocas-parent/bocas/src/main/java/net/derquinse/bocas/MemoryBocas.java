@@ -41,13 +41,8 @@ final class MemoryBocas implements Bocas {
 	/** Repository. */
 	private final ConcurrentMap<ByteString, InputSupplier<InputStream>> repository = new MapMaker().makeMap();
 
-	/** Creates a new memory repository. */
-	public static MemoryBocas create() {
-		return new MemoryBocas();
-	}
-
 	/** Constructor. */
-	private MemoryBocas() {
+	MemoryBocas() {
 	}
 
 	/*
