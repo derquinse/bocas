@@ -33,16 +33,23 @@ import com.google.common.io.InputSupplier;
  */
 @Beta
 public interface Bocas {
-	/** Returns whether the repository contains the provided key. */
+	/**
+	 * Returns whether the repository contains the provided key.
+	 * @throws BocasException if an error occurs.
+	 */
 	boolean contains(ByteString key);
 
-	/** Returns the subset of the provided keys that are contained in the repository. */
+	/**
+	 * Returns the subset of the provided keys that are contained in the repository.
+	 * @throws BocasException if an error occurs.
+	 */
 	Set<ByteString> contained(Iterable<ByteString> keys);
 
 	/**
 	 * Returns the object for the provided key.
 	 * @param key The requested key.
 	 * @return The object, if found.
+	 * @throws BocasException if an error occurs.
 	 */
 	Optional<InputSupplier<InputStream>> get(ByteString key);
 
@@ -50,18 +57,22 @@ public interface Bocas {
 	 * Returns the objects for a collection of keys.
 	 * @param keys The requested keys.
 	 * @return The objects found in the repository or an empty map if none is found.
+	 * @throws BocasException if an error occurs.
 	 */
 	Map<ByteString, InputSupplier<InputStream>> get(Iterable<ByteString> keys);
 
 	/**
 	 * Puts an object into the repository.
 	 * @return The generated key.
+	 * @throws BocasException if an error occurs.
 	 */
 	ByteString put(InputSupplier<? extends InputStream> object);
 
 	/**
 	 * Puts some objects into the repository in a single operation.
+	 * The operation must be atomic.
 	 * @return The list of generated keys, in the same order than the objects provided.
+	 * @throws BocasException if an error occurs.
 	 */
 	List<ByteString> putAll(List<? extends InputSupplier<? extends InputStream>> objects);
 }
