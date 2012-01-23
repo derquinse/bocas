@@ -36,11 +36,11 @@ public abstract class ForwardingBocas extends ForwardingObject implements Bocas 
 	/** Constructor to use by subclasses. */
 	protected ForwardingBocas() {
 	}
-	
-	/**  Returns the backing delegate instance that methods are forwarded to. */
+
+	/** Returns the backing delegate instance that methods are forwarded to. */
 	@Override
 	protected abstract Bocas delegate();
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see net.derquinse.bocas.Bocas#contains(net.derquinse.common.base.ByteString)
@@ -49,7 +49,7 @@ public abstract class ForwardingBocas extends ForwardingObject implements Bocas 
 	public boolean contains(ByteString key) {
 		return delegate().contains(key);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see net.derquinse.bocas.Bocas#contained(java.lang.Iterable)
@@ -58,25 +58,25 @@ public abstract class ForwardingBocas extends ForwardingObject implements Bocas 
 	public Set<ByteString> contained(Iterable<ByteString> keys) {
 		return delegate().contained(keys);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see net.derquinse.bocas.Bocas#get(net.derquinse.common.base.ByteString)
 	 */
 	@Override
-	public Optional<InputSupplier<InputStream>> get(ByteString key) {
+	public Optional<BocasValue> get(ByteString key) {
 		return delegate().get(key);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see net.derquinse.bocas.Bocas#get(java.lang.Iterable)
 	 */
 	@Override
-	public Map<ByteString, InputSupplier<InputStream>> get(Iterable<ByteString> keys) {
+	public Map<ByteString, BocasValue> get(Iterable<ByteString> keys) {
 		return delegate().get(keys);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see net.derquinse.bocas.Bocas#put(com.google.common.io.InputSupplier)
@@ -85,7 +85,7 @@ public abstract class ForwardingBocas extends ForwardingObject implements Bocas 
 	public ByteString put(InputSupplier<? extends InputStream> object) {
 		return delegate().put(object);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see net.derquinse.bocas.Bocas#putAll(java.util.List)
@@ -94,5 +94,5 @@ public abstract class ForwardingBocas extends ForwardingObject implements Bocas 
 	public List<ByteString> putAll(List<? extends InputSupplier<? extends InputStream>> objects) {
 		return delegate().putAll(objects);
 	}
-	
+
 }

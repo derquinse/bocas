@@ -51,7 +51,7 @@ public interface Bocas {
 	 * @return The object, if found.
 	 * @throws BocasException if an error occurs.
 	 */
-	Optional<InputSupplier<InputStream>> get(ByteString key);
+	Optional<BocasValue> get(ByteString key);
 
 	/**
 	 * Returns the objects for a collection of keys.
@@ -59,7 +59,7 @@ public interface Bocas {
 	 * @return The objects found in the repository or an empty map if none is found.
 	 * @throws BocasException if an error occurs.
 	 */
-	Map<ByteString, InputSupplier<InputStream>> get(Iterable<ByteString> keys);
+	Map<ByteString, BocasValue> get(Iterable<ByteString> keys);
 
 	/**
 	 * Puts an object into the repository.
@@ -69,8 +69,7 @@ public interface Bocas {
 	ByteString put(InputSupplier<? extends InputStream> object);
 
 	/**
-	 * Puts some objects into the repository in a single operation.
-	 * The operation must be atomic.
+	 * Puts some objects into the repository in a single operation. The operation must be atomic.
 	 * @return The list of generated keys, in the same order than the objects provided.
 	 * @throws BocasException if an error occurs.
 	 */

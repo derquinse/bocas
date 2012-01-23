@@ -39,7 +39,7 @@ import com.google.common.io.InputSupplier;
 @Beta
 final class MemoryBocas implements Bocas {
 	/** Repository. */
-	private final ConcurrentMap<ByteString, InputSupplier<InputStream>> repository = new MapMaker().makeMap();
+	private final ConcurrentMap<ByteString, LoadedBocasValue> repository = new MapMaker().makeMap();
 
 	/** Constructor. */
 	MemoryBocas() {
@@ -77,9 +77,9 @@ final class MemoryBocas implements Bocas {
 	 * @see net.derquinse.bocas.Bocas#get(net.derquinse.common.base.ByteString)
 	 */
 	@Override
-	public Optional<InputSupplier<InputStream>> get(ByteString key) {
-		InputSupplier<InputStream> data = repository.get(key);
-		return Optional.fromNullable(data);
+	public Optional<BocasValue> get(ByteString key) {
+		BocasValue value = repository.get(key);
+		return Optional.fromNullable(value);
 	}
 
 	/*
@@ -87,20 +87,20 @@ final class MemoryBocas implements Bocas {
 	 * @see net.derquinse.bocas.Bocas#get(java.lang.Iterable)
 	 */
 	@Override
-	public Map<ByteString, InputSupplier<InputStream>> get(Iterable<ByteString> keys) {
-		Map<ByteString, InputSupplier<InputStream>> map = Maps.newHashMap();
+	public Map<ByteString, BocasValue> get(Iterable<ByteString> keys) {
+		Map<ByteString, BocasValue> map = Maps.newHashMap();
 		for (ByteString key : keys) {
-			InputSupplier<InputStream> data = repository.get(key);
-			if (data != null) {
-				map.put(key, data);
+			BocasValue value = repository.get(key);
+			if (value != null) {
+				map.put(key, value);
 			}
 		}
 		return map;
 	}
 
-	private ByteString put(BocasEntry entry) {
+	private ByteString put(LoadedBocasEntry entry) {
 		ByteString key = entry.getKey();
-		repository.putIfAbsent(key, entry.getValue());
+		repository.putIfAbsent(key, entry.getValue().load());
 		return key;
 	}
 
@@ -119,12 +119,12 @@ final class MemoryBocas implements Bocas {
 	 */
 	@Override
 	public List<ByteString> putAll(List<? extends InputSupplier<? extends InputStream>> objects) {
-		List<BocasEntry> entries = Lists.newLinkedList();
+		List<LoadedBocasEntry> entries = Lists.newLinkedList();
 		for (InputSupplier<? extends InputStream> object : objects) {
 			entries.add(BocasEntry.loaded(object));
 		}
 		List<ByteString> keys = Lists.newArrayListWithCapacity(entries.size());
-		for (BocasEntry entry : entries) {
+		for (LoadedBocasEntry entry : entries) {
 			keys.add(put(entry));
 		}
 		return keys;

@@ -69,10 +69,10 @@ public final class BocasExerciser {
 		ByteString k = entry.getKey();
 		assertTrue(bocas.contains(k));
 		assertTrue(bocas.contained(ImmutableSet.of(k)).contains(k));
-		Optional<InputSupplier<InputStream>> optional = bocas.get(k);
+		Optional<BocasValue> optional = bocas.get(k);
 		assertTrue(optional.isPresent());
 		check(entry, optional.get());
-		Map<ByteString, InputSupplier<InputStream>> map = bocas.get(ImmutableSet.of(k));
+		Map<ByteString, BocasValue> map = bocas.get(ImmutableSet.of(k));
 		assertTrue(map.containsKey(k));
 		check(entry, map.get(k));
 	}

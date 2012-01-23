@@ -24,7 +24,6 @@ import net.derquinse.common.base.ByteString;
 import net.derquinse.common.base.Digests;
 
 import com.google.common.annotations.Beta;
-import com.google.common.io.ByteStreams;
 import com.google.common.io.InputSupplier;
 
 /**
@@ -32,26 +31,41 @@ import com.google.common.io.InputSupplier;
  * @author Andres Rodriguez.
  */
 @Beta
-public final class BocasEntry {
+public abstract class BocasEntry {
+	/** Entry key. */
 	private final ByteString key;
-	private final InputSupplier<InputStream> value;
 
-	private static InputSupplier<? extends InputStream> check(InputSupplier<? extends InputStream> value) {
+	private static <T extends InputSupplier<? extends InputStream>> T checkValue(T value) {
 		return checkNotNull(value, "The BOCAS entry value must be provided");
 	}
 
 	/**
 	 * Creates a new entry with the provided value.
 	 * @param value Entry value.
-	 * @return The created entry. Its value is the same provided input supplier.
+	 * @param size Payload size.
+	 * @return The created entry. If the argument is a loaded value, the result will be a loaded
+	 *         entry.
+	 * @throws BocasException if unable to read the value payload.
+	 */
+	public static BocasEntry of(InputSupplier<? extends InputStream> value, Integer size) {
+		if (value instanceof LoadedBocasValue) {
+			return new LoadedBocasEntry((LoadedBocasValue) value);
+		}
+		return new UnloadedBocasEntry(BocasValue.of(value, size));
+	}
+
+	/**
+	 * Creates a new entry with the provided value.
+	 * @param value Entry value.
+	 * @return The created entry. If the argument is a loaded value, the result will be a loaded
+	 *         entry.
+	 * @throws BocasException if unable to read the value payload.
 	 */
 	public static BocasEntry of(InputSupplier<? extends InputStream> value) {
-		try {
-			ByteString key = Digests.sha256(check(value));
-			return new BocasEntry(key, value);
-		} catch (IOException e) {
-			throw new BocasException(e);
+		if (value instanceof LoadedBocasValue) {
+			return new LoadedBocasEntry((LoadedBocasValue) value);
 		}
+		return new UnloadedBocasEntry(BocasValue.of(value));
 	}
 
 	/**
@@ -59,29 +73,30 @@ public final class BocasEntry {
 	 * @param value Entry value.
 	 * @return The created entry. Its value is backed by an in-memory array.
 	 */
-	public static BocasEntry loaded(InputSupplier<? extends InputStream> value) {
+	public static LoadedBocasEntry loaded(InputSupplier<? extends InputStream> value) {
+		return new LoadedBocasEntry(BocasValue.loaded(value));
+	}
+
+	/** Constructor. */
+	BocasEntry(InputSupplier<? extends InputStream> value) {
 		try {
-			byte[] data = ByteStreams.toByteArray(check(value));
-			return of(ByteStreams.newInputStreamSupplier(data));
+			this.key = Digests.sha256(checkValue(value));
 		} catch (IOException e) {
 			throw new BocasException(e);
 		}
 	}
 
-	/** Constructor. */
-	@SuppressWarnings("unchecked")
-	private BocasEntry(ByteString key, InputSupplier<? extends InputStream> value) {
-		this.key = key;
-		this.value = (InputSupplier<InputStream>) value;
-	}
-
 	/** Returns the entry key. */
-	public ByteString getKey() {
+	public final ByteString getKey() {
 		return key;
 	}
 
 	/** Returns the entry value. */
-	public InputSupplier<InputStream> getValue() {
-		return value;
-	}
+	public abstract BocasValue getValue();
+
+	/**
+	 * Turns this entry into a loaded entry.
+	 * @throws BocasException if unable to read the value payload.
+	 */
+	public abstract LoadedBocasEntry load();
 }
