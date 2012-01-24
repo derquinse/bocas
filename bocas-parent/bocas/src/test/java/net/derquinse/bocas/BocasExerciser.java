@@ -112,7 +112,7 @@ public final class BocasExerciser {
 				data1.getKey());
 		assertEquals(bocas.contained(list).size(), 2);
 		assertEquals(bocas.get(list).size(), 2);
-		List<ByteString> keys = bocas.putAll(ImmutableList.of(data2.getValue(), data3.getValue()));
+		List<ByteString> keys = bocas.putSuppliers(ImmutableList.of(data2.getValue(), data3.getValue()));
 		assertEquals(keys.size(), 2);
 		assertEquals(keys.get(0), data2.getKey());
 		assertEquals(keys.get(1), data3.getKey());

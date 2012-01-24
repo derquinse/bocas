@@ -69,9 +69,24 @@ public interface Bocas {
 	ByteString put(InputSupplier<? extends InputStream> object);
 
 	/**
+	 * Puts an object into the repository.
+	 * @return The generated key.
+	 * @throws BocasException if an error occurs.
+	 */
+	ByteString put(InputStream object);
+
+	/**
 	 * Puts some objects into the repository in a single operation. The operation must be atomic.
 	 * @return The list of generated keys, in the same order than the objects provided.
 	 * @throws BocasException if an error occurs.
 	 */
-	List<ByteString> putAll(List<? extends InputSupplier<? extends InputStream>> objects);
+	List<ByteString> putSuppliers(List<? extends InputSupplier<? extends InputStream>> objects);
+
+	/**
+	 * Puts some objects into the repository in a single operation. The operation must be atomic.
+	 * @return The list of generated keys, in the same order than the objects provided.
+	 * @throws BocasException if an error occurs.
+	 */
+	List<ByteString> putStreams(List<? extends InputStream> objects);
+
 }

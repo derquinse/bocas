@@ -88,11 +88,29 @@ public abstract class ForwardingBocas extends ForwardingObject implements Bocas 
 
 	/*
 	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.Bocas#put(java.io.InputStream)
+	 */
+	@Override
+	public ByteString put(InputStream object) {
+		return delegate().put(object);
+	}
+
+	/*
+	 * (non-Javadoc)
 	 * @see net.derquinse.bocas.Bocas#putAll(java.util.List)
 	 */
 	@Override
-	public List<ByteString> putAll(List<? extends InputSupplier<? extends InputStream>> objects) {
-		return delegate().putAll(objects);
+	public List<ByteString> putSuppliers(List<? extends InputSupplier<? extends InputStream>> objects) {
+		return delegate().putSuppliers(objects);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.Bocas#putStreams(java.util.List)
+	 */
+	@Override
+	public List<ByteString> putStreams(List<? extends InputStream> objects) {
+		return delegate().putStreams(objects);
 	}
 
 }

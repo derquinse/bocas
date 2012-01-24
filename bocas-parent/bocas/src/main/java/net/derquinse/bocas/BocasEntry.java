@@ -77,6 +77,15 @@ public abstract class BocasEntry {
 		return new LoadedBocasEntry(BocasValue.loaded(value));
 	}
 
+	/**
+	 * Creates a new entry with an in-memory copy of the the provided value.
+	 * @param value Entry value.
+	 * @return The created entry. Its value is backed by an in-memory array.
+	 */
+	public static LoadedBocasEntry loaded(InputStream value) {
+		return new LoadedBocasEntry(BocasValue.loaded(value));
+	}
+
 	/** Constructor. */
 	BocasEntry(InputSupplier<? extends InputStream> value) {
 		try {

@@ -4,7 +4,7 @@
 	<parent>
 		<artifactId>derquinse-common-project-parent</artifactId>
 		<groupId>net.derquinse</groupId>
-		<version>1.0.17-SNAPSHOT</version>
+		<version>1.0.17</version>
 	</parent>
 	<groupId>net.derquinse.bocas</groupId>
 	<artifactId>bocas-parent</artifactId>
@@ -52,5 +52,8 @@
 	</dependencies>
 	<modules>
 		<module>bocas</module>
+		<module>bocas-jersey</module>
+		<module>bocas-jersey-client</module>
+		<module>bocas-jersey-server</module>
 	</modules>
 </project>

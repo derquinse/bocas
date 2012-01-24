@@ -115,12 +115,38 @@ final class MemoryBocas implements Bocas {
 
 	/*
 	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.Bocas#put(java.io.InputStream)
+	 */
+	@Override
+	public ByteString put(InputStream object) {
+		return put(BocasEntry.loaded(object));
+	}
+
+	/*
+	 * (non-Javadoc)
 	 * @see net.derquinse.bocas.Bocas#putAll(java.util.List)
 	 */
 	@Override
-	public List<ByteString> putAll(List<? extends InputSupplier<? extends InputStream>> objects) {
+	public List<ByteString> putSuppliers(List<? extends InputSupplier<? extends InputStream>> objects) {
 		List<LoadedBocasEntry> entries = Lists.newLinkedList();
 		for (InputSupplier<? extends InputStream> object : objects) {
+			entries.add(BocasEntry.loaded(object));
+		}
+		List<ByteString> keys = Lists.newArrayListWithCapacity(entries.size());
+		for (LoadedBocasEntry entry : entries) {
+			keys.add(put(entry));
+		}
+		return keys;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.Bocas#putStreams(java.util.List)
+	 */
+	@Override
+	public List<ByteString> putStreams(List<? extends InputStream> objects) {
+		List<LoadedBocasEntry> entries = Lists.newLinkedList();
+		for (InputStream object : objects) {
 			entries.add(BocasEntry.loaded(object));
 		}
 		List<ByteString> keys = Lists.newArrayListWithCapacity(entries.size());

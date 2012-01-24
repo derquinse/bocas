@@ -88,6 +88,21 @@ public abstract class BocasValue implements InputSupplier<InputStream> {
 		}
 	}
 
+	/**
+	 * Creates a new value with an in-memory copy of the the provided payload.
+	 * @param payload Value payload.
+	 * @return The created value.
+	 * @throws BocasException if unable to load the payload.
+	 */
+	public static LoadedBocasValue loaded(InputStream payload) {
+		try {
+			byte[] data = ByteStreams.toByteArray(checkPayload(payload));
+			return new LoadedBocasValue(data);
+		} catch (IOException e) {
+			throw new BocasException(e);
+		}
+	}
+
 	/** Constructor. */
 	BocasValue() {
 	}
