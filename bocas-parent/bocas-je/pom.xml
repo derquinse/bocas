@@ -1,0 +1,32 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<artifactId>bocas-parent</artifactId>
+		<groupId>net.derquinse.bocas</groupId>
+		<version>0.0.1-SNAPSHOT</version>
+		<relativePath>..</relativePath>
+	</parent>
+	<artifactId>bocas-je</artifactId>
+	<name>Derquinse Bocas :: Berkeley DB Back-end</name>
+	<description>Module containing the Berkeley DB Java Edition Back-end</description>
+	<dependencies>
+		<dependency>
+			<groupId>net.derquinse.bocas</groupId>
+			<artifactId>bocas-jersey</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>com.sleepycat</groupId>
+			<artifactId>je</artifactId>
+			<version>4.0.92</version>
+		</dependency>
+		<dependency>
+			<groupId>net.derquinse.bocas</groupId>
+			<artifactId>bocas</artifactId>
+			<version>0.0.1-SNAPSHOT</version>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+</project>

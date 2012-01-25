@@ -40,6 +40,16 @@ public abstract class BocasEntry {
 	}
 
 	/**
+	 * Creates a new loaded entry.
+	 * @param bytes Entry value payload. The provided byte array MUST NOT be modified after being
+	 *          handed to the value, as no defensive copy is performed.
+	 * @return The created value.
+	 */
+	public static LoadedBocasEntry of(byte[] bytes) {
+		return new LoadedBocasEntry(BocasValue.of(bytes));
+	}
+
+	/**
 	 * Creates a new entry with the provided value.
 	 * @param value Entry value.
 	 * @param size Payload size.
