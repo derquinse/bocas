@@ -17,42 +17,16 @@ package net.derquinse.bocas.je;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import javax.annotation.PreDestroy;
-import javax.annotation.concurrent.GuardedBy;
 
 import net.derquinse.bocas.Bocas;
-import net.derquinse.bocas.BocasEntry;
 import net.derquinse.bocas.BocasException;
-import net.derquinse.bocas.BocasValue;
-import net.derquinse.common.base.ByteString;
 import net.derquinse.common.base.NotInstantiable;
 
-import com.beust.jcommander.internal.Maps;
-import com.google.common.annotations.Beta;
-import com.google.common.base.Optional;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.google.common.io.ByteStreams;
-import com.google.common.io.InputSupplier;
-import com.sleepycat.je.Database;
-import com.sleepycat.je.DatabaseConfig;
-import com.sleepycat.je.DatabaseEntry;
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
-import com.sleepycat.je.OperationStatus;
-import com.sleepycat.je.Transaction;
 
 /**
  * Factory class for Bocas repositories based on Berkeley DB Java Edition.
