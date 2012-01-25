@@ -12,15 +12,12 @@
 	<packaging>pom</packaging>
 	<name>Derquinse BOCAS :: Parent POM</name>
 	<description>Parent POM for Derquinse BOCAS Project</description>
-	<url>http://code.google.com/p/conquiris/</url>
+	<url>http://code.google.com/p/bocas/</url>
 	<scm>
-		<connection>scm:svn:http://conquiris.googlecode.com/svn/trunk/conquiris</connection>
-		<developerConnection>scm:svn:https://conquiris.googlecode.com/svn/trunk/conquiris</developerConnection>
-		<url>http://code.google.com/p/conquiris/source/browse/#svn/trunk/conquiris</url>
+		<connection>scm:git:https://code.google.com/p/bocas/</connection>
+		<developerConnection>scm:git:https://code.google.com/p/bocas/</developerConnection>
+		<url>http://code.google.com/p/bocas/source/browse/</url>
 	</scm>
-	<properties>
-		<releaseTagBase>https://conquiris.googlecode.com/svn/tags/</releaseTagBase>
-	</properties>
 	<issueManagement>
 		<system>Google Code</system>
 		<url>http://code.google.com/p/bocas/issues/list</url>
@@ -28,19 +25,9 @@
 	<dependencyManagement>
 		<dependencies>
 			<dependency>
-				<groupId>org.apache.lucene</groupId>
-				<artifactId>lucene-core</artifactId>
-				<version>3.5.0</version>
-			</dependency>
-			<dependency>
-				<groupId>org.apache.lucene</groupId>
-				<artifactId>lucene-analyzers</artifactId>
-				<version>3.5.0</version>
-			</dependency>
-			<dependency>
-				<groupId>org.apache.lucene</groupId>
-				<artifactId>lucene-highlighter</artifactId>
-				<version>3.5.0</version>
+				<groupId>com.sleepycat</groupId>
+				<artifactId>je</artifactId>
+				<version>4.0.92</version>
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
