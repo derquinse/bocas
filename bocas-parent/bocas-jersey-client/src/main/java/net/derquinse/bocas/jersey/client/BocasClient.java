@@ -40,13 +40,13 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.InputSupplier;
-import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.ClientResponse.Status;
 import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.api.client.WebResource;
 import com.sun.jersey.multipart.FormDataBodyPart;
 import com.sun.jersey.multipart.FormDataMultiPart;
 import com.sun.jersey.multipart.MultiPart;
+import com.sun.jersey.multipart.MultiPartMediaTypes;
 
 /**
  * Bocas repository client based on Jersey (JAX-RS).
@@ -66,10 +66,6 @@ final class BocasClient implements Bocas {
 
 	private static <T> T checkObjects(T objects) {
 		return checkNotNull(objects, "The objects to put must be provided");
-	}
-
-	private static BocasException exception(ClientResponse r) {
-		return exception(new UniformInterfaceException(r));
 	}
 
 	private static BocasException exception(Throwable t) {
@@ -92,12 +88,17 @@ final class BocasClient implements Bocas {
 		return r;
 	}
 
+	private static WebResource object(WebResource base, ByteString key) {
+		WebResource r = base.path(checkKey(key));
+		return r;
+	}
+
 	BocasClient(WebResource resource) {
 		this.resource = checkNotNull(resource, "The root resource must be provided");
 	}
 
 	private WebResource object(ByteString key) {
-		return resource.path(checkKey(key));
+		return object(resource, key);
 	}
 
 	/*
@@ -106,15 +107,15 @@ final class BocasClient implements Bocas {
 	 */
 	@Override
 	public boolean contains(ByteString key) {
-		ClientResponse r = object(key).head();
-		Status s = r.getClientResponseStatus();
-		if (s == Status.OK) {
+		try {
+			object(resource.path(BocasResources.CATALOG), key).get(String.class);
 			return true;
+		} catch (UniformInterfaceException e) {
+			if (e.getResponse().getClientResponseStatus() == Status.NOT_FOUND) {
+				return false;
+			}
+			throw exception(e);
 		}
-		if (s == Status.NOT_FOUND) {
-			return false;
-		}
-		throw exception(r);
 	}
 
 	private WebResource query2Resource(Iterable<ByteString> keys) {
@@ -247,7 +248,7 @@ final class BocasClient implements Bocas {
 			for (byte[] object : objects) {
 				multipart.bodyPart(object, MediaType.APPLICATION_OCTET_STREAM_TYPE);
 			}
-			String response = resource.entity(multipart).post(String.class);
+			String response = resource.entity(multipart, MultiPartMediaTypes.MULTIPART_MIXED_TYPE).post(String.class);
 			return BocasResources.response2List(response);
 		} catch (UniformInterfaceException e) {
 			throw exception(e);

@@ -30,7 +30,6 @@ import java.util.Set;
 import javax.annotation.Nullable;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
-import javax.ws.rs.HEAD;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -55,7 +54,6 @@ import com.google.common.collect.Sets;
 import com.google.common.io.ByteStreams;
 import com.sun.jersey.api.NotFoundException;
 import com.sun.jersey.multipart.BodyPart;
-import com.sun.jersey.multipart.BodyPartEntity;
 import com.sun.jersey.multipart.FormDataMultiPart;
 import com.sun.jersey.multipart.MultiPart;
 import com.sun.jersey.multipart.MultiPartMediaTypes;
@@ -104,7 +102,7 @@ public class BocasResource {
 	 * @param bocas Repository.
 	 */
 	public BocasResource(Bocas bocas) {
-		this.bocas = checkNotNull(bocas, "The bocas respository must be provided");
+		this.bocas = checkNotNull(bocas, "The bocas repository must be provided");
 	}
 
 	/** @see Bocas#get(ByteString) */
@@ -150,9 +148,10 @@ public class BocasResource {
 	}
 
 	/** @see Bocas#contains(ByteString) */
-	@HEAD
-	@Path("{id}")
-	public final Response containsObject(@PathParam("id") String id) {
+	@GET
+	@Produces(MediaType.TEXT_PLAIN)
+	@Path(BocasResources.CATALOG + "/{id}")
+	public final String containsObject(@PathParam("id") String id) {
 		ByteString key;
 		try {
 			key = ByteString.fromHexString(id);
@@ -160,7 +159,7 @@ public class BocasResource {
 			throw notFound();
 		}
 		if (bocas.contains(key)) {
-			return Response.ok().build();
+			return id;
 			// TODO: etag
 		}
 		throw notFound();
@@ -197,7 +196,7 @@ public class BocasResource {
 		checkNotNull(entity);
 		List<InputStream> list = Lists.newLinkedList();
 		for (BodyPart part : entity.getBodyParts()) {
-			list.add(part.getEntityAs(BodyPartEntity.class).getInputStream());
+			list.add(part.getEntityAs(InputStream.class));
 		}
 		List<ByteString> created = bocas.putStreams(list);
 		if (created.isEmpty()) {
