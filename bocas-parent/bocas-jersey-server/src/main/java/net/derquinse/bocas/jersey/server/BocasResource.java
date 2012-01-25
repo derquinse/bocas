@@ -16,13 +16,12 @@
 package net.derquinse.bocas.jersey.server;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static net.derquinse.bocas.jersey.BocasResources.KEY_SPLITTER;
+import static net.derquinse.bocas.jersey.BocasResources.iterable2String;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -36,6 +35,7 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
@@ -50,7 +50,6 @@ import net.derquinse.bocas.jersey.BocasResources;
 import net.derquinse.common.base.ByteString;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.ByteStreams;
@@ -81,6 +80,23 @@ public class BocasResource {
 
 	private static WebApplicationException notFound() {
 		throw new NotFoundException();
+	}
+
+	private static Set<ByteString> setFromQuery(@Nullable List<String> keys) {
+		if (keys == null || keys.isEmpty()) {
+			throw notFound();
+		}
+		Set<ByteString> set = Sets.newHashSetWithExpectedSize(keys.size());
+		for (String k : keys) {
+			try {
+				set.add(ByteString.fromHexString(k));
+			} catch (RuntimeException e) {
+			}
+		}
+		if (set.isEmpty()) {
+			throw notFound();
+		}
+		return set;
 	}
 
 	/**
@@ -116,29 +132,11 @@ public class BocasResource {
 		return b.build();
 	}
 
-	private static Set<ByteString> getKeys(@Nullable String query) {
-		if (query == null) {
-			return ImmutableSet.of();
-		}
-		Set<ByteString> set = Sets.newHashSet();
-		for (String s : KEY_SPLITTER.split(query)) {
-			try {
-				set.add(ByteString.fromHexString(s));
-			} catch (RuntimeException e) {
-			}
-		}
-		return set;
-	}
-
 	/** @see Bocas#get(Iterable) */
-	@POST
-	@Consumes(MediaType.TEXT_PLAIN)
+	@GET
 	@Produces(MediaType.MULTIPART_FORM_DATA)
-	public final Response getObjects(String query) {
-		Set<ByteString> requested = getKeys(query);
-		if (requested.isEmpty()) {
-			throw notFound();
-		}
+	public final Response getObjects(@QueryParam(BocasResources.KEY) List<String> keys) {
+		Set<ByteString> requested = setFromQuery(keys);
 		Map<ByteString, BocasValue> found = bocas.get(requested);
 		if (found.isEmpty()) {
 			throw notFound();
@@ -163,39 +161,26 @@ public class BocasResource {
 		}
 		if (bocas.contains(key)) {
 			return Response.ok().build();
-			// TODO: cache control
+			// TODO: etag
 		}
 		throw notFound();
 	}
 
-	private String collection2String(Collection<ByteString> keys) {
-		StringBuilder b = new StringBuilder();
-		for (ByteString key : keys) {
-			b.append(key.toHexString()).append('\n');
-		}
-		return b.toString();
-	}
-
 	/** @see Bocas#contained(Iterable) */
-	@POST
-	@Path(BocasResources.CATALOG)
-	@Consumes(MediaType.TEXT_PLAIN)
+	@GET
 	@Produces(MediaType.TEXT_PLAIN)
-	public final String containsObjects(String query) {
-		Set<ByteString> requested = getKeys(query);
-		if (requested.isEmpty()) {
-			throw notFound();
-		}
+	@Path(BocasResources.CATALOG)
+	public final String containsObjects(@QueryParam(BocasResources.KEY) List<String> keys) {
+		Set<ByteString> requested = setFromQuery(keys);
 		Set<ByteString> found = bocas.contained(requested);
 		if (found.isEmpty()) {
 			throw notFound();
 		}
-		return collection2String(found);
+		return iterable2String(found);
 	}
 
 	/** @see Bocas#put(InputStream) */
 	@POST
-	@Path(BocasResources.FUNNEL)
 	@Consumes(MediaType.APPLICATION_OCTET_STREAM)
 	@Produces(MediaType.TEXT_PLAIN)
 	public final Response putObject(InputStream stream) {
@@ -206,7 +191,6 @@ public class BocasResource {
 
 	/** @see Bocas#putStreams(java.util.List) */
 	@POST
-	@Path(BocasResources.FUNNEL)
 	@Consumes(MultiPartMediaTypes.MULTIPART_MIXED)
 	@Produces(MediaType.TEXT_PLAIN)
 	public final Response putObjects(MultiPart entity) {
@@ -219,7 +203,7 @@ public class BocasResource {
 		if (created.isEmpty()) {
 			throw notFound();
 		}
-		return Response.status(Status.CREATED).entity(collection2String(created)).build();
+		return Response.status(Status.CREATED).entity(iterable2String(created)).build();
 	}
 
 }

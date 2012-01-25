@@ -43,6 +43,7 @@ public final class BocasClientFactory {
 	private BocasClientFactory() {
 		ClientConfig config = new DefaultClientConfig();
 		client = Client.create(config);
+		client.setFollowRedirects(true);
 	}
 
 	/**
