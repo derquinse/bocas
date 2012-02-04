@@ -291,4 +291,40 @@ final class BocasClient implements Bocas {
 		}
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.Bocas#putZip(java.io.InputStream)
+	 */
+	@Override
+	public Map<String, ByteString> putZip(InputStream object) {
+		try {
+			return putZip(ByteStreams.toByteArray(checkObject(object)));
+		} catch (IOException e) {
+			throw exception(e);
+		}
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.Bocas#putZip(com.google.common.io.InputSupplier)
+	 */
+	@Override
+	public Map<String, ByteString> putZip(InputSupplier<? extends InputStream> object) {
+		try {
+			return putZip(ByteStreams.toByteArray(checkObject(object)));
+		} catch (IOException e) {
+			throw exception(e);
+		}
+	}
+
+	private Map<String, ByteString> putZip(byte[] object) {
+		try {
+			String response = resource.path(BocasResources.ZIP).entity(object, MediaType.APPLICATION_OCTET_STREAM_TYPE)
+					.post(String.class);
+			return BocasResources.response2zip(response);
+		} catch (UniformInterfaceException e) {
+			throw exception(e);
+		}
+	}
+
 }

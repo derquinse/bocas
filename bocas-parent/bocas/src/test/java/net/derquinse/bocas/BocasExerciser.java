@@ -122,6 +122,9 @@ public final class BocasExerciser {
 		checkNotInRepository(data4);
 		assertEquals(bocas.contained(list).size(), 3);
 		assertEquals(bocas.get(list).size(), 3);
+		// ZIP
+		Map<String, ByteString> entries = bocas.putZip(getClass().getResourceAsStream("loren.zip"));
+		assertEquals(bocas.contained(entries.values()).size(), 3);
 		// Concurrent operation.
 		ExecutorService s = Executors.newFixedThreadPool(5);
 		for (int i = 0; i < 1000; i++) {

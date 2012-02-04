@@ -113,4 +113,22 @@ public abstract class ForwardingBocas extends ForwardingObject implements Bocas 
 		return delegate().putStreams(objects);
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.Bocas#putZip(java.io.InputStream)
+	 */
+	@Override
+	public Map<String, ByteString> putZip(InputStream object) {
+		return delegate().putZip(object);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.Bocas#putZip(com.google.common.io.InputSupplier)
+	 */
+	@Override
+	public Map<String, ByteString> putZip(InputSupplier<? extends InputStream> object) {
+		return delegate().putZip(object);
+	}
+
 }

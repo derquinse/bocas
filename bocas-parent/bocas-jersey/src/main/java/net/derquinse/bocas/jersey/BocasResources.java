@@ -17,18 +17,28 @@ package net.derquinse.bocas.jersey;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.annotation.Nullable;
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.StreamingOutput;
 
 import net.derquinse.bocas.BocasException;
+import net.derquinse.bocas.BocasValue;
 import net.derquinse.common.base.ByteString;
 import net.derquinse.common.base.NotInstantiable;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.io.ByteStreams;
 
 /**
  * Resource constants for Bocas RESTful API.
@@ -40,12 +50,17 @@ public final class BocasResources extends NotInstantiable {
 
 	/** Key response splitter. */
 	private static final Splitter KEY_SPLITTER = Splitter.on(CharMatcher.WHITESPACE).trimResults().omitEmptyStrings();
+	/** Key response splitter. */
+	private static final Splitter ENTRY_SPLITTER = Splitter.on(':').trimResults().omitEmptyStrings();
 
 	/** Key query parameter. */
 	public static final String KEY = "k";
 
 	/** Catalog resource. */
 	public static final String CATALOG = "catalog";
+
+	/** Zip resource. */
+	public static final String ZIP = "zip";
 
 	/** Turns a non-null key into a string. */
 	public static String checkKey(ByteString key) {
@@ -79,6 +94,41 @@ public final class BocasResources extends NotInstantiable {
 		} catch (RuntimeException e) {
 			throw new BocasException(e);
 		}
+	}
+
+	/** Turns a Bocas value into an streaming output. */
+	public static StreamingOutput value2Output(final BocasValue value) {
+		return new StreamingOutput() {
+			@Override
+			public void write(OutputStream output) throws IOException, WebApplicationException {
+				ByteStreams.copy(value, output);
+			}
+		};
+	}
+
+	public static String zip2response(Map<String, ByteString> entries) {
+		if (entries == null || entries.isEmpty()) {
+			return "";
+		}
+		StringBuilder b = new StringBuilder();
+		for (Entry<String, ByteString> entry : entries.entrySet()) {
+			b.append(entry.getValue().toHexString()).append(':').append(entry.getKey()).append('\n');
+		}
+		return b.toString();
+	}
+
+	public static Map<String, ByteString> response2zip(String response) {
+		if (response == null) {
+			return ImmutableMap.of();
+		}
+		Map<String, ByteString> map = Maps.newHashMap();
+		for (String line : KEY_SPLITTER.split(response)) {
+			List<String> parts = Lists.newLinkedList(ENTRY_SPLITTER.split(line));
+			if (parts.size() == 2) {
+				map.put(parts.get(1), ByteString.fromHexString(parts.get(0)));
+			}
+		}
+		return map;
 	}
 
 }

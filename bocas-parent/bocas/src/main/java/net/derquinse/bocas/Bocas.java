@@ -89,4 +89,18 @@ public interface Bocas {
 	 */
 	List<ByteString> putStreams(List<? extends InputStream> objects);
 
+	/**
+	 * Puts a zip object into the repository.
+	 * @return A map from the zip entry names to their keys.
+	 * @throws BocasException if an error occurs.
+	 */
+	Map<String, ByteString> putZip(InputStream object);
+
+	/**
+	 * Puts a zip object into the repository.
+	 * @return A map from the zip entry names to their keys.
+	 * @throws BocasException if an error occurs.
+	 */
+	Map<String, ByteString> putZip(InputSupplier<? extends InputStream> object);
+
 }

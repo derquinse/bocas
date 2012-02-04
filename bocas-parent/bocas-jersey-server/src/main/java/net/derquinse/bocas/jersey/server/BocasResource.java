@@ -17,10 +17,10 @@ package net.derquinse.bocas.jersey.server;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static net.derquinse.bocas.jersey.BocasResources.iterable2String;
+import static net.derquinse.bocas.jersey.BocasResources.value2Output;
+import static net.derquinse.bocas.jersey.BocasResources.zip2response;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -41,7 +41,6 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
-import javax.ws.rs.core.StreamingOutput;
 
 import net.derquinse.bocas.Bocas;
 import net.derquinse.bocas.BocasValue;
@@ -51,7 +50,6 @@ import net.derquinse.common.base.ByteString;
 import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.google.common.io.ByteStreams;
 import com.sun.jersey.api.NotFoundException;
 import com.sun.jersey.multipart.BodyPart;
 import com.sun.jersey.multipart.FormDataMultiPart;
@@ -66,15 +64,6 @@ import com.sun.jersey.multipart.MultiPartMediaTypes;
 public class BocasResource {
 	/** Repository. */
 	private final Bocas bocas;
-
-	private static StreamingOutput value2Output(final BocasValue value) {
-		return new StreamingOutput() {
-			@Override
-			public void write(OutputStream output) throws IOException, WebApplicationException {
-				ByteStreams.copy(value, output);
-			}
-		};
-	}
 
 	private static WebApplicationException notFound() {
 		throw new NotFoundException();
@@ -203,6 +192,15 @@ public class BocasResource {
 			throw notFound();
 		}
 		return Response.status(Status.CREATED).entity(iterable2String(created)).build();
+	}
+
+	/** @see Bocas#put(InputStream) */
+	@POST
+	@Path(BocasResources.ZIP)
+	@Consumes(MediaType.APPLICATION_OCTET_STREAM)
+	@Produces(MediaType.TEXT_PLAIN)
+	public final Response putZip(InputStream stream) {
+		return Response.ok(zip2response(bocas.putZip(stream))).build();
 	}
 
 }
