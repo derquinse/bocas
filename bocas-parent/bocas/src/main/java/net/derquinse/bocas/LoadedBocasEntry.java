@@ -48,4 +48,10 @@ public final class LoadedBocasEntry extends BocasEntry {
 	public LoadedBocasEntry load() {
 		return this;
 	}
+
+	/** Copies and returns the internal data. */
+	public byte[] getData() {
+		return value.getData();
+	}
+
 }

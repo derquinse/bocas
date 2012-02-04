@@ -6,8 +6,8 @@
 		<version>0.0.2-SNAPSHOT</version>
 	</parent>
 	<artifactId>bocas</artifactId>
-	<name>Derquinse BOCAS :: Core</name>
-	<description>Core module of Derquinse BOCAS</description>
+	<name>Derquinse Bocas :: Core</name>
+	<description>Core module of Derquinse Bocas</description>
 	<dependencies>
 		<dependency>
 			<groupId>net.derquinse</groupId>

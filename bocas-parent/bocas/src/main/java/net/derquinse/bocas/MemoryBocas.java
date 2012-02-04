@@ -15,8 +15,6 @@
  */
 package net.derquinse.bocas;
 
-import java.io.InputStream;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
@@ -26,18 +24,16 @@ import net.derquinse.common.base.ByteString;
 import com.google.common.annotations.Beta;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.collect.MapMaker;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.io.InputSupplier;
 
 /**
  * A memory-based BOCAS repository.
  * @author Andres Rodriguez.
  */
 @Beta
-final class MemoryBocas implements Bocas {
+final class MemoryBocas extends SkeletalBocasBackend {
 	/** Repository. */
 	private final ConcurrentMap<ByteString, LoadedBocasValue> repository = new MapMaker().makeMap();
 
@@ -98,62 +94,23 @@ final class MemoryBocas implements Bocas {
 		return map;
 	}
 
-	private ByteString put(LoadedBocasEntry entry) {
-		ByteString key = entry.getKey();
-		repository.putIfAbsent(key, entry.getValue().load());
-		return key;
+	/*
+	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.SkeletalBocasBackend#put(net.derquinse.bocas.LoadedBocasEntry)
+	 */
+	@Override
+	protected void put(LoadedBocasEntry entry) {
+		repository.putIfAbsent(entry.getKey(), entry.getValue());
 	}
 
 	/*
 	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#put(com.google.common.io.InputSupplier)
+	 * @see net.derquinse.bocas.SkeletalBocasBackend#put(java.lang.Iterable)
 	 */
 	@Override
-	public ByteString put(InputSupplier<? extends InputStream> object) {
-		return put(BocasEntry.loaded(object));
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#put(java.io.InputStream)
-	 */
-	@Override
-	public ByteString put(InputStream object) {
-		return put(BocasEntry.loaded(object));
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#putAll(java.util.List)
-	 */
-	@Override
-	public List<ByteString> putSuppliers(List<? extends InputSupplier<? extends InputStream>> objects) {
-		List<LoadedBocasEntry> entries = Lists.newLinkedList();
-		for (InputSupplier<? extends InputStream> object : objects) {
-			entries.add(BocasEntry.loaded(object));
-		}
-		List<ByteString> keys = Lists.newArrayListWithCapacity(entries.size());
+	protected void put(Iterable<? extends LoadedBocasEntry> entries) {
 		for (LoadedBocasEntry entry : entries) {
-			keys.add(put(entry));
+			put(entry);
 		}
-		return keys;
 	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#putStreams(java.util.List)
-	 */
-	@Override
-	public List<ByteString> putStreams(List<? extends InputStream> objects) {
-		List<LoadedBocasEntry> entries = Lists.newLinkedList();
-		for (InputStream object : objects) {
-			entries.add(BocasEntry.loaded(object));
-		}
-		List<ByteString> keys = Lists.newArrayListWithCapacity(entries.size());
-		for (LoadedBocasEntry entry : entries) {
-			keys.add(put(entry));
-		}
-		return keys;
-	}
-
 }

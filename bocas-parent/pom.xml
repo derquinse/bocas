@@ -3,14 +3,14 @@
 	<parent>
 		<artifactId>derquinse-common-project-parent</artifactId>
 		<groupId>net.derquinse</groupId>
-		<version>1.0.18</version>
+		<version>1.0.19</version>
 	</parent>
 	<groupId>net.derquinse.bocas</groupId>
 	<artifactId>bocas-parent</artifactId>
 	<version>0.0.2-SNAPSHOT</version>
 	<packaging>pom</packaging>
-	<name>Derquinse BOCAS :: Parent POM</name>
-	<description>Parent POM for Derquinse BOCAS Project</description>
+	<name>Derquinse Bocas :: Parent POM</name>
+	<description>Parent POM for Derquinse Bocas Project</description>
 	<url>http://code.google.com/p/bocas/</url>
 	<scm>
 		<connection>scm:git:https://code.google.com/p/bocas/</connection>
@@ -36,6 +36,27 @@
 			<artifactId>derquinse-common-test-support</artifactId>
 		</dependency>
 	</dependencies>
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<configuration>
+					<minmemory>256m</minmemory>
+					<maxmemory>512m</maxmemory>
+					<links>
+						<link>http://docs.guava-libraries.googlecode.com/git-history/v11.0.1/javadoc</link>
+						<link>http://joda-time.sourceforge.net/api-release</link>
+						<link>http://jsr311.java.net/nonav/releases/1.1</link>
+						<link>http://jersey.java.net/nonav/apidocs/1.11/jersey</link>
+						<link>http://google-gson.googlecode.com/svn/trunk/gson/docs/javadocs</link>
+					</links>
+					<version>false</version>
+					<doctitle>Bocas API (version ${project.version})</doctitle>
+					<windowtitle>Bocas API</windowtitle>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 	<modules>
 		<module>bocas</module>
 		<module>bocas-je</module>

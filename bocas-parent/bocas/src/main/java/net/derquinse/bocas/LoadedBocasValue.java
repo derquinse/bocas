@@ -61,4 +61,11 @@ public final class LoadedBocasValue extends BocasValue {
 	public LoadedBocasValue load() {
 		return this;
 	}
+
+	/** Copies and returns the internal data. */
+	public byte[] getData() {
+		byte[] copy = new byte[payload.length];
+		System.arraycopy(payload, 0, copy, 0, payload.length);
+		return copy;
+	}
 }

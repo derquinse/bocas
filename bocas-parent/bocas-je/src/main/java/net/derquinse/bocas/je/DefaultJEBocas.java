@@ -19,8 +19,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -29,19 +27,16 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.annotation.PreDestroy;
 import javax.annotation.concurrent.GuardedBy;
 
-import net.derquinse.bocas.Bocas;
-import net.derquinse.bocas.BocasEntry;
 import net.derquinse.bocas.BocasException;
 import net.derquinse.bocas.BocasValue;
+import net.derquinse.bocas.LoadedBocasEntry;
+import net.derquinse.bocas.SkeletalBocasBackend;
 import net.derquinse.common.base.ByteString;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Optional;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.io.ByteStreams;
-import com.google.common.io.InputSupplier;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -55,7 +50,7 @@ import com.sleepycat.je.Transaction;
  * @author Andres Rodriguez.
  */
 @Beta
-final class DefaultJEBocas implements Bocas {
+final class DefaultJEBocas extends SkeletalBocasBackend {
 	/** Database name. */
 	private static final String DB_NAME = "BocasDB";
 	/** Database environment. */
@@ -74,14 +69,6 @@ final class DefaultJEBocas implements Bocas {
 
 	private static void checkKeys(Iterable<ByteString> key) {
 		checkNotNull(key, "The object keys must be provided");
-	}
-
-	private static void checkValue(Object value) {
-		checkNotNull(value, "The object value must be provided");
-	}
-
-	private static void checkValues(Object values) {
-		checkNotNull(values, "The object values must be provided");
 	}
 
 	/** Constructor. */
@@ -200,70 +187,30 @@ final class DefaultJEBocas implements Bocas {
 
 	/*
 	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#put(com.google.common.io.InputSupplier)
+	 * @see net.derquinse.bocas.SkeletalBocasBackend#put(net.derquinse.bocas.LoadedBocasEntry)
 	 */
 	@Override
-	public ByteString put(final InputSupplier<? extends InputStream> object) {
-		checkValue(object);
-		return new Put() {
+	protected void put(final LoadedBocasEntry entry) {
+		new Put() {
 			@Override
-			byte[] getData() throws IOException {
-				return ByteStreams.toByteArray(object);
+			void put() {
+				write(entry);
 			}
 		}.run();
 	}
 
 	/*
 	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#put(java.io.InputStream)
+	 * @see net.derquinse.bocas.SkeletalBocasBackend#put(java.lang.Iterable)
 	 */
 	@Override
-	public ByteString put(final InputStream object) {
-		checkValue(object);
-		return new Put() {
+	protected void put(final Iterable<? extends LoadedBocasEntry> entries) {
+		new Put() {
 			@Override
-			byte[] getData() throws IOException {
-				return ByteStreams.toByteArray(object);
-			}
-		}.run();
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#putAll(java.util.List)
-	 */
-	@Override
-	public List<ByteString> putSuppliers(final List<? extends InputSupplier<? extends InputStream>> objects) {
-		checkValues(objects);
-		return new MultiPut<InputSupplier<? extends InputStream>>() {
-			@Override
-			List<? extends InputSupplier<? extends InputStream>> getObjects() {
-				return objects;
-			}
-
-			@Override
-			byte[] getData(InputSupplier<? extends InputStream> object) throws IOException {
-				return ByteStreams.toByteArray(object);
-			}
-		}.run();
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#putStreams(java.util.List)
-	 */
-	@Override
-	public List<ByteString> putStreams(final List<? extends InputStream> objects) {
-		checkValues(objects);
-		return new MultiPut<InputStream>() {
-			@Override
-			List<? extends InputStream> getObjects() {
-				return objects;
-			}
-
-			@Override
-			byte[] getData(InputStream object) throws IOException {
-				return ByteStreams.toByteArray(object);
+			void put() {
+				for (LoadedBocasEntry entry : entries) {
+					write(entry);
+				}
 			}
 		}.run();
 	}
@@ -323,49 +270,26 @@ final class DefaultJEBocas implements Bocas {
 
 		/**
 		 * Writes an entry, if absent
-		 * @param data Data to write.
-		 * @return The entry key.
+		 * @param entry Entry to write.
 		 */
-		final ByteString write(byte[] data) {
-			BocasEntry entry = BocasEntry.of(data);
+		final void write(LoadedBocasEntry entry) {
 			DatabaseEntry k = key(entry.getKey());
-			DatabaseEntry v = new DatabaseEntry(data);
+			DatabaseEntry v = new DatabaseEntry(entry.getData());
 			database.putNoOverwrite(tx, k, v);
-			return entry.getKey();
 		}
 
 		abstract T perform() throws IOException;
 	}
 
-	/** Put transaction. */
-	private abstract class Put extends Tx<ByteString> {
+	/** Put transactions. */
+	private abstract class Put extends Tx<Object> {
 		@Override
 		final ByteString perform() throws IOException {
-			return write(getData());
+			put();
+			return null;
 		}
 
-		abstract byte[] getData() throws IOException;
-	}
-
-	/** Put multiple objects transaction. */
-	private abstract class MultiPut<S> extends Tx<List<ByteString>> {
-		@Override
-		final List<ByteString> perform() throws IOException {
-			List<byte[]> entries = Lists.newArrayListWithCapacity(getObjects().size());
-			for (S object : getObjects()) {
-				checkValue(object);
-				entries.add(getData(object));
-			}
-			List<ByteString> keys = Lists.newArrayListWithCapacity(entries.size());
-			for (byte[] entry : entries) {
-				keys.add(write(entry));
-			}
-			return keys;
-		}
-
-		abstract List<? extends S> getObjects();
-
-		abstract byte[] getData(S object) throws IOException;
+		abstract void put();
 	}
 
 }

@@ -22,6 +22,7 @@ import java.io.InputStream;
 
 import net.derquinse.common.base.ByteString;
 import net.derquinse.common.base.Digests;
+import net.derquinse.common.meta.MetaProperty;
 
 import com.google.common.annotations.Beta;
 import com.google.common.io.InputSupplier;
@@ -32,6 +33,14 @@ import com.google.common.io.InputSupplier;
  */
 @Beta
 public abstract class BocasEntry {
+	/** Key property. */
+	public static final MetaProperty<BocasEntry, ByteString> KEY = new MetaProperty<BocasEntry, ByteString>("key", true) {
+		@Override
+		public ByteString apply(BocasEntry input) {
+			return input.getKey();
+		}
+	};
+
 	/** Entry key. */
 	private final ByteString key;
 
