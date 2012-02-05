@@ -16,6 +16,7 @@
 package net.derquinse.bocas;
 
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
@@ -29,7 +30,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 /**
- * A memory-based BOCAS repository.
+ * A memory-based Bocas repository.
  * @author Andres Rodriguez.
  */
 @Beta
@@ -105,12 +106,12 @@ final class MemoryBocas extends SkeletalBocasBackend {
 
 	/*
 	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.SkeletalBocasBackend#put(java.lang.Iterable)
+	 * @see net.derquinse.bocas.SkeletalBocasBackend#put(java.util.Map)
 	 */
 	@Override
-	protected void put(Iterable<? extends LoadedBocasEntry> entries) {
-		for (LoadedBocasEntry entry : entries) {
-			put(entry);
+	protected void put(Map<ByteString, LoadedBocasValue> entries) {
+		for (Entry<ByteString, LoadedBocasValue> entry : entries.entrySet()) {
+			repository.putIfAbsent(entry.getKey(), entry.getValue());
 		}
 	}
 }

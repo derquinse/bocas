@@ -20,6 +20,7 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -30,6 +31,7 @@ import javax.annotation.concurrent.GuardedBy;
 import net.derquinse.bocas.BocasException;
 import net.derquinse.bocas.BocasValue;
 import net.derquinse.bocas.LoadedBocasEntry;
+import net.derquinse.bocas.LoadedBocasValue;
 import net.derquinse.bocas.SkeletalBocasBackend;
 import net.derquinse.common.base.ByteString;
 
@@ -201,15 +203,15 @@ final class DefaultJEBocas extends SkeletalBocasBackend {
 
 	/*
 	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.SkeletalBocasBackend#put(java.lang.Iterable)
+	 * @see net.derquinse.bocas.SkeletalBocasBackend#put(java.util.Map)
 	 */
 	@Override
-	protected void put(final Iterable<? extends LoadedBocasEntry> entries) {
+	protected void put(final Map<ByteString, LoadedBocasValue> entries) {
 		new Put() {
 			@Override
 			void put() {
-				for (LoadedBocasEntry entry : entries) {
-					write(entry);
+				for (Entry<ByteString, LoadedBocasValue> entry : entries.entrySet()) {
+					write(entry.getKey(), entry.getValue());
 				}
 			}
 		}.run();
@@ -270,12 +272,21 @@ final class DefaultJEBocas extends SkeletalBocasBackend {
 
 		/**
 		 * Writes an entry, if absent
+		 * @param key Entry key.
+		 * @param value Entry value.
+		 */
+		final void write(ByteString key, LoadedBocasValue value) {
+			DatabaseEntry k = key(key);
+			DatabaseEntry v = new DatabaseEntry(value.getData());
+			database.putNoOverwrite(tx, k, v);
+		}
+
+		/**
+		 * Writes an entry, if absent
 		 * @param entry Entry to write.
 		 */
 		final void write(LoadedBocasEntry entry) {
-			DatabaseEntry k = key(entry.getKey());
-			DatabaseEntry v = new DatabaseEntry(entry.getData());
-			database.putNoOverwrite(tx, k, v);
+			write(entry.getKey(), entry.getValue());
 		}
 
 		abstract T perform() throws IOException;

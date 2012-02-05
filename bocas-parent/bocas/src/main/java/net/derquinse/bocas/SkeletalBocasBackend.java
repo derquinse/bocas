@@ -33,8 +33,7 @@ import com.google.common.collect.Maps;
 import com.google.common.io.InputSupplier;
 
 /**
- * A base implementation for a Bocas repository back-end. This abstract class should not be used for
- * caches, proxies, stubs or any other class that is a final back-end.
+ * A base implementation for a Bocas repository back-end.
  * @author Andres Rodriguez.
  */
 @Beta
@@ -75,11 +74,20 @@ public abstract class SkeletalBocasBackend implements Bocas {
 	 * Puts some entries into the repository in a single operation.
 	 * @throws BocasException if an error occurs.
 	 */
-	protected abstract void put(Iterable<? extends LoadedBocasEntry> entries);
+	protected abstract void put(Map<ByteString, LoadedBocasValue> entries);
 
 	/** Returns a list of keys. */
 	private List<ByteString> getKeys(Iterable<? extends BocasEntry> entries) {
 		return ImmutableList.copyOf(Iterables.transform(entries, BocasEntry.KEY));
+	}
+
+	/** Returns a map of values. */
+	private Map<ByteString, LoadedBocasValue> getMap(Iterable<? extends LoadedBocasEntry> entries) {
+		Map<ByteString, LoadedBocasValue> map = Maps.newHashMap();
+		for (LoadedBocasEntry entry : entries) {
+			map.put(entry.getKey(), entry.getValue());
+		}
+		return map;
 	}
 
 	/*
@@ -92,7 +100,7 @@ public abstract class SkeletalBocasBackend implements Bocas {
 		for (InputSupplier<? extends InputStream> object : objects) {
 			entries.add(BocasEntry.loaded(object));
 		}
-		put(entries);
+		put(getMap(entries));
 		return getKeys(entries);
 	}
 
@@ -106,7 +114,7 @@ public abstract class SkeletalBocasBackend implements Bocas {
 		for (InputStream object : objects) {
 			entries.add(BocasEntry.loaded(object));
 		}
-		put(entries);
+		put(getMap(entries));
 		return getKeys(entries);
 	}
 
@@ -118,7 +126,7 @@ public abstract class SkeletalBocasBackend implements Bocas {
 		for (Entry<String, byte[]> d : data.entrySet()) {
 			entries.put(d.getKey(), BocasEntry.of(d.getValue()));
 		}
-		put(entries.values());
+		put(getMap(entries.values()));
 		return ImmutableMap.copyOf(Maps.transformValues(entries, BocasEntry.KEY));
 	}
 

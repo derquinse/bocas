@@ -46,7 +46,7 @@ public final class BocasExerciser {
 	/** Error flag. */
 	private boolean ok = true;
 
-	private static BocasEntry data() {
+	static BocasEntry data() {
 		byte[] data = RandomSupport.getBytes(RandomSupport.nextInt(1024, 10240));
 		return BocasEntry.of(ByteStreams.newInputStreamSupplier(data));
 	}

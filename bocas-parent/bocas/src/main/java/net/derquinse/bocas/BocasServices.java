@@ -15,6 +15,8 @@
  */
 package net.derquinse.bocas;
 
+import java.util.concurrent.TimeUnit;
+
 import net.derquinse.common.base.NotInstantiable;
 
 import com.google.common.annotations.Beta;
@@ -31,4 +33,10 @@ public final class BocasServices extends NotInstantiable {
 	public static Bocas memory() {
 		return new MemoryBocas();
 	}
+
+	/** Creates a new unweighted cached repository. */
+	public static Bocas cache(Bocas bocas, Long maximumSize, long duration, TimeUnit unit) {
+		return new CachingBocas(bocas, null, maximumSize, duration, unit);
+	}
+
 }

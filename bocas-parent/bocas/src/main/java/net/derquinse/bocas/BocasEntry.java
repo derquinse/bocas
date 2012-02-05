@@ -41,6 +41,15 @@ public abstract class BocasEntry {
 		}
 	};
 
+	/** Value property. */
+	public static final MetaProperty<BocasEntry, BocasValue> VALUE = new MetaProperty<BocasEntry, BocasValue>("value",
+			true) {
+		@Override
+		public BocasValue apply(BocasEntry input) {
+			return input.getValue();
+		}
+	};
+
 	/** Entry key. */
 	private final ByteString key;
 

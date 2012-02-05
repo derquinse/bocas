@@ -15,14 +15,29 @@
  */
 package net.derquinse.bocas;
 
+import java.util.concurrent.TimeUnit;
+
+import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**
  * Test for {@link MemoryBocas}.
  */
 public class MemoryBocasTest {
+	private Bocas memory = BocasServices.memory();
+
 	@Test
 	public void test() throws Exception {
-		BocasExerciser.exercise(BocasServices.memory());
+		BocasExerciser.exercise(memory);
 	}
+
+	@Test(dependsOnMethods = "test")
+	public void cached() throws Exception {
+		Bocas cache = BocasServices.cache(memory, 1000L, 10L, TimeUnit.MINUTES);
+		BocasExerciser.exercise(cache);
+		BocasEntry e = BocasExerciser.data();
+		memory.put(e.getValue());
+		Assert.assertTrue(cache.contains(e.getKey()));
+	}
+
 }
