@@ -31,6 +31,7 @@ import net.derquinse.bocas.BocasException;
 import net.derquinse.bocas.BocasValue;
 import net.derquinse.common.base.ByteString;
 import net.derquinse.common.base.NotInstantiable;
+import net.derquinse.common.util.zip.MaybeCompressed;
 
 import com.google.common.base.CharMatcher;
 import com.google.common.base.Splitter;
@@ -61,6 +62,9 @@ public final class BocasResources extends NotInstantiable {
 
 	/** Zip resource. */
 	public static final String ZIP = "zip";
+
+	/** Zip and GZip resource. */
+	public static final String ZIPGZIP = "zipgzip";
 
 	/** Turns a non-null key into a string. */
 	public static String checkKey(ByteString key) {
@@ -117,6 +121,18 @@ public final class BocasResources extends NotInstantiable {
 		return b.toString();
 	}
 
+	public static String czip2response(Map<String, MaybeCompressed<ByteString>> entries) {
+		if (entries == null || entries.isEmpty()) {
+			return "";
+		}
+		StringBuilder b = new StringBuilder();
+		for (Entry<String, MaybeCompressed<ByteString>> entry : entries.entrySet()) {
+			b.append(entry.getValue().getPayload().toHexString()).append(':')
+					.append(entry.getValue().isCompressed() ? "1" : "0").append(':').append(entry.getKey()).append('\n');
+		}
+		return b.toString();
+	}
+
 	public static Map<String, ByteString> response2zip(String response) {
 		if (response == null) {
 			return ImmutableMap.of();
@@ -126,6 +142,22 @@ public final class BocasResources extends NotInstantiable {
 			List<String> parts = Lists.newLinkedList(ENTRY_SPLITTER.split(line));
 			if (parts.size() == 2) {
 				map.put(parts.get(1), ByteString.fromHexString(parts.get(0)));
+			}
+		}
+		return map;
+	}
+
+	public static Map<String, MaybeCompressed<ByteString>> response2czip(String response) {
+		if (response == null) {
+			return ImmutableMap.of();
+		}
+		Map<String, MaybeCompressed<ByteString>> map = Maps.newHashMap();
+		for (String line : KEY_SPLITTER.split(response)) {
+			List<String> parts = Lists.newLinkedList(ENTRY_SPLITTER.split(line));
+			if (parts.size() == 3) {
+				ByteString key = ByteString.fromHexString(parts.get(0));
+				boolean compressed = "1".equals(parts.get(1));
+				map.put(parts.get(2), MaybeCompressed.of(compressed, key));
 			}
 		}
 		return map;

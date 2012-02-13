@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 
 import net.derquinse.common.base.ByteString;
 import net.derquinse.common.test.RandomSupport;
+import net.derquinse.common.util.zip.MaybeCompressed;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
@@ -125,6 +126,13 @@ public final class BocasExerciser {
 		// ZIP
 		Map<String, ByteString> entries = bocas.putZip(getClass().getResourceAsStream("loren.zip"));
 		assertEquals(bocas.contained(entries.values()).size(), 3);
+		// ZIP
+		Map<String, MaybeCompressed<ByteString>> mentries = bocas
+				.putZipAndGZip(getClass().getResourceAsStream("loren.zip"));
+		assertEquals(bocas.contained(entries.values()).size(), 3);
+		for (MaybeCompressed<ByteString> mk : mentries.values()) {
+			assertTrue(mk.isCompressed());
+		}
 		// Concurrent operation.
 		ExecutorService s = Executors.newFixedThreadPool(5);
 		for (int i = 0; i < 1000; i++) {

@@ -16,6 +16,7 @@
 package net.derquinse.bocas.jersey.server;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static net.derquinse.bocas.jersey.BocasResources.czip2response;
 import static net.derquinse.bocas.jersey.BocasResources.iterable2String;
 import static net.derquinse.bocas.jersey.BocasResources.value2Output;
 import static net.derquinse.bocas.jersey.BocasResources.zip2response;
@@ -194,13 +195,22 @@ public class BocasResource {
 		return Response.status(Status.CREATED).entity(iterable2String(created)).build();
 	}
 
-	/** @see Bocas#put(InputStream) */
+	/** @see Bocas#putZip(InputStream) */
 	@POST
 	@Path(BocasResources.ZIP)
 	@Consumes(MediaType.APPLICATION_OCTET_STREAM)
 	@Produces(MediaType.TEXT_PLAIN)
 	public final Response putZip(InputStream stream) {
 		return Response.ok(zip2response(bocas.putZip(stream))).build();
+	}
+
+	/** @see Bocas#putZipAndGZip(InputStream) */
+	@POST
+	@Path(BocasResources.ZIPGZIP)
+	@Consumes(MediaType.APPLICATION_OCTET_STREAM)
+	@Produces(MediaType.TEXT_PLAIN)
+	public final Response putZipAndGZip(InputStream stream) {
+		return Response.ok(czip2response(bocas.putZipAndGZip(stream))).build();
 	}
 
 }

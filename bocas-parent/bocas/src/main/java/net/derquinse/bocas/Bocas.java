@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Set;
 
 import net.derquinse.common.base.ByteString;
+import net.derquinse.common.util.zip.MaybeCompressed;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Optional;
@@ -102,5 +103,21 @@ public interface Bocas {
 	 * @throws BocasException if an error occurs.
 	 */
 	Map<String, ByteString> putZip(InputSupplier<? extends InputStream> object);
+
+	/**
+	 * Puts a zip object into the repository trying to compress them individually with gzip.
+	 * @return A map from the zip entry names to their keys, indicating if the entry has been
+	 *         compressed.
+	 * @throws BocasException if an error occurs.
+	 */
+	Map<String, MaybeCompressed<ByteString>> putZipAndGZip(InputStream object);
+
+	/**
+	 * Puts a zip object into the repository trying to compress them individually with gzip.
+	 * @return A map from the zip entry names to their keys, indicating if the entry has been
+	 *         compressed.
+	 * @throws BocasException if an error occurs.
+	 */
+	Map<String, MaybeCompressed<ByteString>> putZipAndGZip(InputSupplier<? extends InputStream> object);
 
 }

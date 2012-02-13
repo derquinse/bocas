@@ -31,6 +31,7 @@ import net.derquinse.bocas.BocasException;
 import net.derquinse.bocas.BocasValue;
 import net.derquinse.bocas.jersey.BocasResources;
 import net.derquinse.common.base.ByteString;
+import net.derquinse.common.util.zip.MaybeCompressed;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -322,6 +323,42 @@ final class BocasClient implements Bocas {
 			String response = resource.path(BocasResources.ZIP).entity(object, MediaType.APPLICATION_OCTET_STREAM_TYPE)
 					.post(String.class);
 			return BocasResources.response2zip(response);
+		} catch (UniformInterfaceException e) {
+			throw exception(e);
+		}
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.Bocas#putZipAndGZip(java.io.InputStream)
+	 */
+	@Override
+	public Map<String, MaybeCompressed<ByteString>> putZipAndGZip(InputStream object) {
+		try {
+			return putZipAndGZip(ByteStreams.toByteArray(checkObject(object)));
+		} catch (IOException e) {
+			throw exception(e);
+		}
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.Bocas#putZipAndGZip(com.google.common.io.InputSupplier)
+	 */
+	@Override
+	public Map<String, MaybeCompressed<ByteString>> putZipAndGZip(InputSupplier<? extends InputStream> object) {
+		try {
+			return putZipAndGZip(ByteStreams.toByteArray(checkObject(object)));
+		} catch (IOException e) {
+			throw exception(e);
+		}
+	}
+
+	private Map<String, MaybeCompressed<ByteString>> putZipAndGZip(byte[] object) {
+		try {
+			String response = resource.path(BocasResources.ZIPGZIP).entity(object, MediaType.APPLICATION_OCTET_STREAM_TYPE)
+					.post(String.class);
+			return BocasResources.response2czip(response);
 		} catch (UniformInterfaceException e) {
 			throw exception(e);
 		}

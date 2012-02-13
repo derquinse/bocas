@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import net.derquinse.common.base.ByteString;
+import net.derquinse.common.util.zip.MaybeCompressed;
 import net.derquinse.common.util.zip.ZipFiles;
 
 import com.google.common.annotations.Beta;
@@ -151,6 +152,51 @@ public abstract class SkeletalBocasBackend implements Bocas {
 	public Map<String, ByteString> putZip(InputSupplier<? extends InputStream> object) {
 		try {
 			return putZip(ZipFiles.loadZip(object));
+		} catch (IOException e) {
+			throw new BocasException(e);
+		}
+	}
+
+	private Map<String, MaybeCompressed<ByteString>> putZipAndGZip(Map<String, MaybeCompressed<byte[]>> data) {
+		if (data == null || data.isEmpty()) {
+			return ImmutableMap.of();
+		}
+		Map<String, LoadedBocasEntry> entries = Maps.newHashMapWithExpectedSize(data.size());
+		for (Entry<String, MaybeCompressed<byte[]>> d : data.entrySet()) {
+			entries.put(d.getKey(), BocasEntry.of(d.getValue().getPayload()));
+		}
+		put(getMap(entries.values()));
+		ImmutableMap.Builder<String, MaybeCompressed<ByteString>> builder = ImmutableMap.builder();
+		for (Entry<String, MaybeCompressed<byte[]>> d : data.entrySet()) {
+			String name = d.getKey();
+			boolean compressed = d.getValue().isCompressed();
+			ByteString key = entries.get(name).getKey();
+			builder.put(name, MaybeCompressed.of(compressed, key));
+		}
+		return builder.build();
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.Bocas#putZipAndGZip(java.io.InputStream)
+	 */
+	@Override
+	public Map<String, MaybeCompressed<ByteString>> putZipAndGZip(InputStream object) {
+		try {
+			return putZipAndGZip(ZipFiles.loadZipAndGZip(object));
+		} catch (IOException e) {
+			throw new BocasException(e);
+		}
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.Bocas#putZipAndGZip(com.google.common.io.InputSupplier)
+	 */
+	@Override
+	public Map<String, MaybeCompressed<ByteString>> putZipAndGZip(InputSupplier<? extends InputStream> object) {
+		try {
+			return putZipAndGZip(ZipFiles.loadZipAndGZip(object));
 		} catch (IOException e) {
 			throw new BocasException(e);
 		}
