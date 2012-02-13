@@ -7,7 +7,7 @@
 	</parent>
 	<groupId>net.derquinse.bocas</groupId>
 	<artifactId>bocas-parent</artifactId>
-	<version>0.0.3</version>
+	<version>0.0.4-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>Derquinse Bocas :: Parent POM</name>
 	<description>Parent POM for Derquinse Bocas Project</description>
