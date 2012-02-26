@@ -39,4 +39,12 @@ public final class BocasServices extends NotInstantiable {
 		return new CachingBocas(bocas, null, maximumSize, duration, unit);
 	}
 
+	/**
+	 * Creates a new bocas repository based on a primary and a fallback one. Writes are not propagated
+	 * to the fallback repository.
+	 */
+	public static Bocas fallback(Bocas primary, Bocas fallback) {
+		return new FallbackBocas(primary, fallback);
+	}
+
 }

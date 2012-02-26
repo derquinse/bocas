@@ -15,9 +15,11 @@
  */
 package net.derquinse.bocas;
 
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
+
 import java.util.concurrent.TimeUnit;
 
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 /**
@@ -37,7 +39,22 @@ public class MemoryBocasTest {
 		BocasExerciser.exercise(cache);
 		BocasEntry e = BocasExerciser.data();
 		memory.put(e.getValue());
-		Assert.assertTrue(cache.contains(e.getKey()));
+		assertTrue(cache.contains(e.getKey()));
+	}
+
+	@Test(dependsOnMethods = "cached")
+	public void fallback() throws Exception {
+		final Bocas primary = BocasServices.memory();
+		final Bocas fallback = BocasServices.fallback(primary, memory);
+		BocasExerciser.exercise(fallback);
+		BocasEntry e = BocasExerciser.data();
+		assertFalse(memory.contains(e.getKey()));
+		assertFalse(primary.contains(e.getKey()));
+		assertFalse(fallback.contains(e.getKey()));
+		memory.put(e.getValue());
+		assertTrue(memory.contains(e.getKey()));
+		assertFalse(primary.contains(e.getKey()));
+		assertTrue(fallback.contains(e.getKey()));
 	}
 
 }

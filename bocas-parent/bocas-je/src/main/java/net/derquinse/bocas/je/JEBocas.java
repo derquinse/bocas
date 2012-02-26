@@ -46,8 +46,8 @@ public final class JEBocas extends NotInstantiable {
 	public static Bocas basic(String directory) {
 		checkNotNull(directory, "The environment directory must be provided");
 		File d = new File(directory);
-		checkArgument(d.exists(), "The directory [%] does not exist");
-		checkArgument(d.isDirectory(), "The provided file [%] is not a directory");
+		checkArgument(d.exists(), "The directory [%s] does not exist");
+		checkArgument(d.isDirectory(), "The provided file [%s] is not a directory");
 		EnvironmentConfig ec = new EnvironmentConfig();
 		ec.setAllowCreate(true);
 		ec.setReadOnly(false);

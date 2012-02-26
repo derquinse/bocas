@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Set;
 
 import net.derquinse.common.base.ByteString;
+import net.derquinse.common.util.zip.MaybeCompressed;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Optional;
@@ -129,6 +130,24 @@ public abstract class ForwardingBocas extends ForwardingObject implements Bocas 
 	@Override
 	public Map<String, ByteString> putZip(InputSupplier<? extends InputStream> object) {
 		return delegate().putZip(object);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.Bocas#putZipAndGZip(java.io.InputStream)
+	 */
+	@Override
+	public Map<String, MaybeCompressed<ByteString>> putZipAndGZip(InputStream object) {
+		return delegate().putZipAndGZip(object);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.Bocas#putZipAndGZip(com.google.common.io.InputSupplier)
+	 */
+	@Override
+	public Map<String, MaybeCompressed<ByteString>> putZipAndGZip(InputSupplier<? extends InputStream> object) {
+		return delegate().putZipAndGZip(object);
 	}
 
 }
