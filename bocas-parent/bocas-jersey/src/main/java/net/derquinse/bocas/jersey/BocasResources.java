@@ -50,7 +50,7 @@ public final class BocasResources extends NotInstantiable {
 	}
 
 	/** Key response splitter. */
-	private static final Splitter KEY_SPLITTER = Splitter.on(CharMatcher.WHITESPACE).trimResults().omitEmptyStrings();
+	public static final Splitter KEY_SPLITTER = Splitter.on(CharMatcher.WHITESPACE).trimResults().omitEmptyStrings();
 	/** Key response splitter. */
 	private static final Splitter ENTRY_SPLITTER = Splitter.on(':').trimResults().omitEmptyStrings();
 

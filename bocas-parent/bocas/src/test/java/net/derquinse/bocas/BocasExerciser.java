@@ -35,6 +35,7 @@ import net.derquinse.common.util.zip.MaybeCompressed;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.InputSupplier;
 
@@ -123,6 +124,26 @@ public final class BocasExerciser {
 		checkNotInRepository(data4);
 		assertEquals(bocas.contained(list).size(), 3);
 		assertEquals(bocas.get(list).size(), 3);
+		// Multiple operation - Phase I
+		List<ByteString> keyList = Lists.newLinkedList();
+		List<BocasValue> valueList = Lists.newLinkedList();
+		for (int i = 0; i < 15; i++) {
+			BocasEntry e = create();
+			keyList.add(e.getKey());
+			valueList.add(e.getValue());
+		}
+		bocas.putSuppliers(valueList);
+		assertTrue(bocas.contained(keyList).containsAll(keyList));
+		assertTrue(bocas.get(keyList).keySet().containsAll(keyList));
+		// Multiple operation - Phase II
+		for (int i = 0; i < 15; i++) {
+			BocasEntry e = create();
+			keyList.add(e.getKey());
+			valueList.add(e.getValue());
+		}
+		bocas.putSuppliers(valueList);
+		assertTrue(bocas.contained(keyList).containsAll(keyList));
+		assertTrue(bocas.get(keyList).keySet().containsAll(keyList));
 		// ZIP
 		Map<String, ByteString> entries = bocas.putZip(getClass().getResourceAsStream("loren.zip"));
 		assertEquals(bocas.contained(entries.values()).size(), 3);

@@ -57,8 +57,8 @@ final class BocasClient implements Bocas {
 	/** Root resource. */
 	private final WebResource resource;
 
-	private static String checkKey(ByteString key) {
-		return checkNotNull(key, "The object key must be provided").toHexString();
+	private static ByteString checkKey(ByteString key) {
+		return checkNotNull(key, "The object key must be provided");
 	}
 
 	private static <T> T checkObject(T object) {
@@ -73,24 +73,8 @@ final class BocasClient implements Bocas {
 		return new BocasException(t);
 	}
 
-	private static WebResource query2Resource(WebResource base, Iterable<ByteString> keys) {
-		checkNotNull(keys, "The object keys must be provided");
-		Set<String> params = Sets.newHashSet();
-		for (ByteString k : keys) {
-			params.add(checkKey(k));
-		}
-		if (params.isEmpty()) {
-			return null;
-		}
-		WebResource r = base;
-		for (String p : params) {
-			r = r.queryParam(BocasResources.KEY, p);
-		}
-		return r;
-	}
-
 	private static WebResource object(WebResource base, ByteString key) {
-		WebResource r = base.path(checkKey(key));
+		WebResource r = base.path(checkKey(key).toHexString());
 		return r;
 	}
 
@@ -119,22 +103,18 @@ final class BocasClient implements Bocas {
 		}
 	}
 
-	private WebResource query2Resource(Iterable<ByteString> keys) {
-		return query2Resource(resource, keys);
-	}
-
 	/*
 	 * (non-Javadoc)
 	 * @see net.derquinse.bocas.Bocas#contained(java.lang.Iterable)
 	 */
 	@Override
 	public Set<ByteString> contained(Iterable<ByteString> keys) {
-		WebResource r = query2Resource(resource.path(BocasResources.CATALOG), keys);
-		if (r == null) {
+		MultiMethod m = new MultiMethod(resource.path(BocasResources.CATALOG), keys);
+		if (m.isEmpty()) {
 			return ImmutableSet.of();
 		}
 		try {
-			final String response = r.get(String.class);
+			final String response = m.call(String.class);
 			return ImmutableSet.copyOf(BocasResources.response2List(response));
 		} catch (UniformInterfaceException e) {
 			if (e.getResponse().getClientResponseStatus() == Status.NOT_FOUND) {
@@ -171,12 +151,12 @@ final class BocasClient implements Bocas {
 	 */
 	@Override
 	public Map<ByteString, BocasValue> get(Iterable<ByteString> keys) {
-		WebResource r = query2Resource(keys);
-		if (r == null) {
+		MultiMethod m = new MultiMethod(resource, keys);
+		if (m.isEmpty()) {
 			return ImmutableMap.of();
 		}
 		try {
-			FormDataMultiPart data = r.get(FormDataMultiPart.class);
+			FormDataMultiPart data = m.call(FormDataMultiPart.class);
 			if (data == null) {
 				return ImmutableMap.of();
 			}
@@ -362,6 +342,43 @@ final class BocasClient implements Bocas {
 		} catch (UniformInterfaceException e) {
 			throw exception(e);
 		}
+	}
+
+	/** Resource that may get called over GET or POST depending on argument number. */
+	private static final class MultiMethod {
+		private final WebResource r;
+		private final Set<ByteString> keys;
+		private final String body;
+
+		MultiMethod(WebResource base, Iterable<ByteString> keys) {
+			checkNotNull(keys, "The object keys must be provided");
+			this.keys = Sets.newHashSet();
+			for (ByteString k : keys) {
+				this.keys.add(checkKey(k));
+			}
+			if (this.keys.size() > 20) {
+				this.body = BocasResources.iterable2String(this.keys);
+			} else {
+				this.body = null;
+				for (ByteString k : this.keys) {
+					base = base.queryParam(BocasResources.KEY, k.toHexString());
+				}
+			}
+			this.r = base;
+		}
+
+		boolean isEmpty() {
+			return keys.isEmpty();
+		}
+
+		<T> T call(Class<T> type) {
+			if (body == null) {
+				return r.get(type);
+			} else {
+				return r.post(type, body);
+			}
+		}
+
 	}
 
 }

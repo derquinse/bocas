@@ -44,11 +44,13 @@ import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
 import net.derquinse.bocas.Bocas;
+import net.derquinse.bocas.BocasException;
 import net.derquinse.bocas.BocasValue;
 import net.derquinse.bocas.jersey.BocasResources;
 import net.derquinse.common.base.ByteString;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.sun.jersey.api.NotFoundException;
@@ -87,6 +89,24 @@ public class BocasResource {
 		return set;
 	}
 
+	private static Set<ByteString> setFromBody(@Nullable String body) {
+		if (body == null) {
+			return ImmutableSet.of();
+		}
+		try {
+			Set<ByteString> set = Sets.newHashSet();
+			for (String k : BocasResources.KEY_SPLITTER.split(body)) {
+				try {
+					set.add(ByteString.fromHexString(k));
+				} catch (RuntimeException e) {
+				}
+			}
+			return set;
+		} catch (RuntimeException e) {
+			throw new BocasException(e);
+		}
+	}
+
 	/**
 	 * Constructor.
 	 * @param bocas Repository.
@@ -114,17 +134,17 @@ public class BocasResource {
 		ResponseBuilder b = Response.ok(value2Output(value), MediaType.APPLICATION_OCTET_STREAM);
 		Integer size = value.getSize();
 		if (size != null) {
-			b.header(HttpHeaders.CONTENT_LENGTH, value.toString());
+			b.header(HttpHeaders.CONTENT_LENGTH, size.toString());
 		}
 		// TODO: cache control
 		return b.build();
 	}
 
 	/** @see Bocas#get(Iterable) */
-	@GET
-	@Produces(MediaType.MULTIPART_FORM_DATA)
-	public final Response getObjects(@QueryParam(BocasResources.KEY) List<String> keys) {
-		Set<ByteString> requested = setFromQuery(keys);
+	private final Response getObjects(Set<ByteString> requested) {
+		if (requested.isEmpty()) {
+			throw notFound();
+		}
 		Map<ByteString, BocasValue> found = bocas.get(requested);
 		if (found.isEmpty()) {
 			throw notFound();
@@ -135,6 +155,21 @@ public class BocasResource {
 					MediaType.APPLICATION_OCTET_STREAM_TYPE);
 		}
 		return Response.ok(entity, MediaType.MULTIPART_FORM_DATA).build();
+	}
+
+	/** @see Bocas#get(Iterable) */
+	@GET
+	@Produces(MediaType.MULTIPART_FORM_DATA)
+	public final Response getObjects(@QueryParam(BocasResources.KEY) List<String> keys) {
+		return getObjects(setFromQuery(keys));
+	}
+
+	/** @see Bocas#get(Iterable) */
+	@POST
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.MULTIPART_FORM_DATA)
+	public final Response getObjects(String keys) {
+		return getObjects(setFromBody(keys));
 	}
 
 	/** @see Bocas#contains(ByteString) */
@@ -156,16 +191,32 @@ public class BocasResource {
 	}
 
 	/** @see Bocas#contained(Iterable) */
-	@GET
-	@Produces(MediaType.TEXT_PLAIN)
-	@Path(BocasResources.CATALOG)
-	public final String containsObjects(@QueryParam(BocasResources.KEY) List<String> keys) {
-		Set<ByteString> requested = setFromQuery(keys);
+	private String containsObjects(Set<ByteString> requested) {
+		if (requested.isEmpty()) {
+			throw notFound();
+		}
 		Set<ByteString> found = bocas.contained(requested);
 		if (found.isEmpty()) {
 			throw notFound();
 		}
 		return iterable2String(found);
+	}
+
+	/** @see Bocas#contained(Iterable) */
+	@GET
+	@Produces(MediaType.TEXT_PLAIN)
+	@Path(BocasResources.CATALOG)
+	public final String containsObjects(@QueryParam(BocasResources.KEY) List<String> keys) {
+		return containsObjects(setFromQuery(keys));
+	}
+
+	/** @see Bocas#contained(Iterable) */
+	@POST
+	@Consumes(MediaType.TEXT_PLAIN)
+	@Produces(MediaType.TEXT_PLAIN)
+	@Path(BocasResources.CATALOG)
+	public final String containsObjects(String keys) {
+		return containsObjects(setFromBody(keys));
 	}
 
 	/** @see Bocas#put(InputStream) */
