@@ -29,6 +29,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import com.google.common.cache.Weigher;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -38,25 +39,27 @@ import com.google.common.io.InputSupplier;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 
 /**
- * A memory-based Bocas repository.
+ * A Guava-cache-based Bocas caching repository.
  * @author Andres Rodriguez.
  */
 @Beta
-final class CachingBocas extends SkeletalBocasBackend {
+final class GuavaCachingBocas extends SkeletalBocasBackend {
 	/** Cached repository. */
 	private final Bocas bocas;
 	/** Cache. */
 	private final LoadingCache<ByteString, LoadedBocasValue> cache;
 
 	/** Constructor. */
-	CachingBocas(Bocas bocas, Long weight, Long maxSize, long duration, TimeUnit unit) {
+	GuavaCachingBocas(Bocas bocas, Long weight, Long maxSize, long duration, TimeUnit unit) {
 		this.bocas = Preconditions.checkNotNull(bocas);
 		CacheBuilder<Object, Object> builder = CacheBuilder.newBuilder().expireAfterAccess(duration, unit);
 		if (maxSize != null) {
 			builder.maximumSize(maxSize);
 		}
-		// TODO weight
-		this.cache = builder.build(new Loader());
+		if (weight != null) {
+			builder.maximumWeight(weight).weigher(EntryWeigher.INSTANCE);
+		}
+		this.cache = builder.recordStats().build(new Loader());
 	}
 
 	/*
@@ -190,7 +193,7 @@ final class CachingBocas extends SkeletalBocasBackend {
 		NotFoundException() {
 		}
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see net.derquinse.bocas.SkeletalBocasBackend#putZip(java.io.InputStream)
@@ -199,7 +202,7 @@ final class CachingBocas extends SkeletalBocasBackend {
 	public Map<String, ByteString> putZip(InputStream object) {
 		return bocas.putZip(object);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see net.derquinse.bocas.SkeletalBocasBackend#putZip(com.google.common.io.InputSupplier)
@@ -217,6 +220,15 @@ final class CachingBocas extends SkeletalBocasBackend {
 				return v.get().load();
 			}
 			throw new NotFoundException();
+		}
+	}
+
+	private enum EntryWeigher implements Weigher<ByteString, LoadedBocasValue> {
+		INSTANCE;
+
+		@Override
+		public int weigh(ByteString key, LoadedBocasValue value) {
+			return value.getSize();
 		}
 	}
 

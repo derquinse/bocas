@@ -36,7 +36,7 @@ public final class BocasServices extends NotInstantiable {
 
 	/** Creates a new unweighted cached repository. */
 	public static Bocas cache(Bocas bocas, Long maximumSize, long duration, TimeUnit unit) {
-		return new CachingBocas(bocas, null, maximumSize, duration, unit);
+		return new GuavaCachingBocas(bocas, null, maximumSize, duration, unit);
 	}
 
 	/**
