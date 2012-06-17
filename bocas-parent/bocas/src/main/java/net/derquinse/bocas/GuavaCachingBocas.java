@@ -28,6 +28,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
+import com.google.common.cache.CacheStats;
 import com.google.common.cache.LoadingCache;
 import com.google.common.cache.Weigher;
 import com.google.common.collect.ImmutableMap;
@@ -43,7 +44,7 @@ import com.google.common.util.concurrent.UncheckedExecutionException;
  * @author Andres Rodriguez.
  */
 @Beta
-final class GuavaCachingBocas extends SkeletalBocasBackend {
+final class GuavaCachingBocas extends SkeletalBocasBackend implements CachingBocas {
 	/** Cached repository. */
 	private final Bocas bocas;
 	/** Cache. */
@@ -210,6 +211,15 @@ final class GuavaCachingBocas extends SkeletalBocasBackend {
 	@Override
 	public Map<String, ByteString> putZip(InputSupplier<? extends InputStream> object) {
 		return bocas.putZip(object);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.CachingBocas#stats()
+	 */
+	@Override
+	public CacheStats stats() {
+		return cache.stats();
 	}
 
 	private final class Loader extends CacheLoader<ByteString, LoadedBocasValue> {
