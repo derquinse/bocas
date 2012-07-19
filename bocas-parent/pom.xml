@@ -1,9 +1,10 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<parent>
 		<artifactId>derquinse-common-project-parent</artifactId>
 		<groupId>net.derquinse</groupId>
-		<version>1.0.24</version>
+		<version>1.0.25</version>
 	</parent>
 	<groupId>net.derquinse.bocas</groupId>
 	<artifactId>bocas-parent</artifactId>
@@ -16,8 +17,8 @@
 		<connection>scm:git:https://code.google.com/p/bocas/</connection>
 		<developerConnection>scm:git:https://code.google.com/p/bocas/</developerConnection>
 		<url>http://code.google.com/p/bocas/source/browse/</url>
-	  <tag>HEAD</tag>
-  </scm>
+		<tag>HEAD</tag>
+	</scm>
 	<issueManagement>
 		<system>Google Code</system>
 		<url>http://code.google.com/p/bocas/issues/list</url>
@@ -37,27 +38,6 @@
 			<artifactId>derquinse-common-test-support</artifactId>
 		</dependency>
 	</dependencies>
-	<build>
-		<plugins>
-			<plugin>
-				<artifactId>maven-javadoc-plugin</artifactId>
-				<configuration>
-					<minmemory>256m</minmemory>
-					<maxmemory>512m</maxmemory>
-					<links>
-						<link>http://docs.guava-libraries.googlecode.com/git-history/v12.0/javadoc</link>
-						<link>http://joda-time.sourceforge.net/api-release</link>
-						<link>http://jsr311.java.net/nonav/releases/1.1</link>
-						<link>http://jersey.java.net/nonav/apidocs/1.12/jersey</link>
-						<link>http://google-gson.googlecode.com/svn/trunk/gson/docs/javadocs</link>
-					</links>
-					<version>false</version>
-					<doctitle>Bocas API (version ${project.version})</doctitle>
-					<windowtitle>Bocas API</windowtitle>
-				</configuration>
-			</plugin>
-		</plugins>
-	</build>
 	<modules>
 		<module>bocas</module>
 		<module>bocas-je</module>
