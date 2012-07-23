@@ -28,7 +28,7 @@ import com.google.common.annotations.Beta;
 import com.google.common.io.InputSupplier;
 
 /**
- * A BOCAS repository entry. This class is provided as a support for repository implementations.
+ * A Bocas repository entry. This class is provided as a support for repository implementations.
  * @author Andres Rodriguez.
  */
 @Beta
@@ -54,7 +54,7 @@ public abstract class BocasEntry {
 	private final ByteString key;
 
 	private static <T extends InputSupplier<? extends InputStream>> T checkValue(T value) {
-		return checkNotNull(value, "The BOCAS entry value must be provided");
+		return checkNotNull(value, "The Bocas entry value must be provided");
 	}
 
 	/**
@@ -79,7 +79,12 @@ public abstract class BocasEntry {
 		if (value instanceof LoadedBocasValue) {
 			return new LoadedBocasEntry((LoadedBocasValue) value);
 		}
-		return new UnloadedBocasEntry(BocasValue.of(value, size));
+		if (value instanceof DirectBocasValue) {
+			return new DirectBocasEntry((DirectBocasValue) value);
+		}
+		@SuppressWarnings("unchecked")
+		InputSupplier<InputStream> v = (InputSupplier<InputStream>) value;
+		return new UnloadedBocasEntry(new UnloadedBocasValue(v, size));
 	}
 
 	/**
@@ -90,10 +95,7 @@ public abstract class BocasEntry {
 	 * @throws BocasException if unable to read the value payload.
 	 */
 	public static BocasEntry of(InputSupplier<? extends InputStream> value) {
-		if (value instanceof LoadedBocasValue) {
-			return new LoadedBocasEntry((LoadedBocasValue) value);
-		}
-		return new UnloadedBocasEntry(BocasValue.of(value));
+		return of(value, null);
 	}
 
 	/**
@@ -112,6 +114,24 @@ public abstract class BocasEntry {
 	 */
 	public static LoadedBocasEntry loaded(InputStream value) {
 		return new LoadedBocasEntry(BocasValue.loaded(value));
+	}
+
+	/**
+	 * Creates a new entry with the value loaded into a direct byte buffer.
+	 * @param value Entry value.
+	 * @return The created entry. Its value is backed by an in-memory array.
+	 */
+	public static DirectBocasEntry direct(InputSupplier<? extends InputStream> value) {
+		return new DirectBocasEntry(BocasValue.direct(value));
+	}
+
+	/**
+	 * Creates a new entry with the value loaded into a direct byte buffer.
+	 * @param value Entry value.
+	 * @return The created entry. Its value is backed by an in-memory array.
+	 */
+	public static DirectBocasEntry direct(InputStream value) {
+		return new DirectBocasEntry(BocasValue.direct(value));
 	}
 
 	/** Constructor. */
@@ -135,5 +155,16 @@ public abstract class BocasEntry {
 	 * Turns this entry into a loaded entry.
 	 * @throws BocasException if unable to read the value payload.
 	 */
-	public abstract LoadedBocasEntry load();
+	public LoadedBocasEntry load() {
+		return new LoadedBocasEntry(getValue().load());
+	}
+
+	/**
+	 * Turns this entry into a direct entry.
+	 * @throws BocasException if unable to read the value payload.
+	 */
+	public DirectBocasEntry direct() {
+		return new DirectBocasEntry(getValue().direct());
+	}
+
 }

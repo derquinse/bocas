@@ -15,27 +15,20 @@
  */
 package net.derquinse.bocas;
 
-import org.testng.annotations.Test;
+import com.google.common.annotations.Beta;
 
 /**
- * Test for {@link MemoryBocas}.
+ * An off-heap-memory-based Bocas repository.
+ * @author Andres Rodriguez.
  */
-public class MemoryBocasTest {
-	private Bocas memory = BocasServices.memory();
-
-	@Test
-	public void test() throws Exception {
-		BocasExerciser.exercise(memory);
+@Beta
+final class DirectMemoryBocas extends AbstractMemoryBocas<DirectBocasValue> {
+	/** Constructor. */
+	DirectMemoryBocas() {
 	}
 
-	@Test(dependsOnMethods = "test")
-	public void cached() throws Exception {
-		BocasExerciser.cached(memory);
+	@Override
+	DirectBocasValue toValue(LoadedBocasValue value) {
+		return value.direct();
 	}
-
-	@Test(dependsOnMethods = "cached")
-	public void fallback() throws Exception {
-		BocasExerciser.fallback(memory);
-	}
-
 }

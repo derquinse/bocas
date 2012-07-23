@@ -16,7 +16,7 @@
 package net.derquinse.bocas;
 
 /**
- * Base class for BOCAS repository exceptions.
+ * Base class for Bocas repository exceptions.
  * @author Andres Rodriguez
  */
 public class BocasException extends RuntimeException {

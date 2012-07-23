@@ -28,7 +28,7 @@ import com.google.common.base.Optional;
 import com.google.common.io.InputSupplier;
 
 /**
- * Interface for a BOCAS repository. Guava library is expected to provide a ByteString object. The
+ * Interface for a Bocas repository. Guava library is expected to provide a ByteString object. The
  * use of the one from derquinse-commons is temporary.
  * @author Andres Rodriguez.
  */

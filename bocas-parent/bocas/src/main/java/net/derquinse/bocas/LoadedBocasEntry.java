@@ -18,7 +18,7 @@ package net.derquinse.bocas;
 import com.google.common.annotations.Beta;
 
 /**
- * A BOCAS repository value loaded into an in-memory byte array.
+ * A Bocas repository value loaded into an in-memory byte array.
  * @author Andres Rodriguez.
  */
 @Beta
@@ -48,10 +48,4 @@ public final class LoadedBocasEntry extends BocasEntry {
 	public LoadedBocasEntry load() {
 		return this;
 	}
-
-	/** Copies and returns the internal data. */
-	public byte[] getData() {
-		return value.getData();
-	}
-
 }

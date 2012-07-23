@@ -24,7 +24,7 @@ import com.google.common.annotations.Beta;
 import com.google.common.io.InputSupplier;
 
 /**
- * A BOCAS repository value loaded into an in-memory byte array. This class is provided as a support
+ * A Bocas repository value loaded into an in-memory byte array. This class is provided as a support
  * for repository implementations.
  * @author Andres Rodriguez.
  */
@@ -58,14 +58,5 @@ final class UnloadedBocasValue extends BocasValue {
 	@Override
 	public InputStream getInput() throws IOException {
 		return payload.getInput();
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.BocasValue#load()
-	 */
-	@Override
-	public LoadedBocasValue load() {
-		return loaded(this);
 	}
 }

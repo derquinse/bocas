@@ -39,6 +39,7 @@ import com.google.common.annotations.Beta;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.io.ByteStreams;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -195,7 +196,7 @@ final class DefaultJEBocas extends SkeletalBocasBackend {
 	protected void put(final LoadedBocasEntry entry) {
 		new Put() {
 			@Override
-			void put() {
+			void put() throws IOException {
 				write(entry);
 			}
 		}.run();
@@ -209,7 +210,7 @@ final class DefaultJEBocas extends SkeletalBocasBackend {
 	protected void put(final Map<ByteString, LoadedBocasValue> entries) {
 		new Put() {
 			@Override
-			void put() {
+			void put() throws IOException {
 				for (Entry<ByteString, LoadedBocasValue> entry : entries.entrySet()) {
 					write(entry.getKey(), entry.getValue());
 				}
@@ -275,9 +276,9 @@ final class DefaultJEBocas extends SkeletalBocasBackend {
 		 * @param key Entry key.
 		 * @param value Entry value.
 		 */
-		final void write(ByteString key, LoadedBocasValue value) {
+		final void write(ByteString key, LoadedBocasValue value) throws IOException {
 			DatabaseEntry k = key(key);
-			DatabaseEntry v = new DatabaseEntry(value.getData());
+			DatabaseEntry v = new DatabaseEntry(ByteStreams.toByteArray(value));
 			database.putNoOverwrite(tx, k, v);
 		}
 
@@ -285,7 +286,7 @@ final class DefaultJEBocas extends SkeletalBocasBackend {
 		 * Writes an entry, if absent
 		 * @param entry Entry to write.
 		 */
-		final void write(LoadedBocasEntry entry) {
+		final void write(LoadedBocasEntry entry) throws IOException {
 			write(entry.getKey(), entry.getValue());
 		}
 
@@ -300,7 +301,7 @@ final class DefaultJEBocas extends SkeletalBocasBackend {
 			return null;
 		}
 
-		abstract void put();
+		abstract void put() throws IOException;
 	}
 
 }

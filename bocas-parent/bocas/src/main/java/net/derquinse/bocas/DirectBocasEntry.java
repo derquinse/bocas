@@ -15,27 +15,37 @@
  */
 package net.derquinse.bocas;
 
-import org.testng.annotations.Test;
+import com.google.common.annotations.Beta;
 
 /**
- * Test for {@link MemoryBocas}.
+ * A Bocas repository value loaded into a direct byte buffer.
+ * @author Andres Rodriguez.
  */
-public class MemoryBocasTest {
-	private Bocas memory = BocasServices.memory();
+@Beta
+public final class DirectBocasEntry extends BocasEntry {
+	/** Payload. */
+	private final DirectBocasValue value;
 
-	@Test
-	public void test() throws Exception {
-		BocasExerciser.exercise(memory);
+	DirectBocasEntry(DirectBocasValue value) {
+		super(value);
+		this.value = value;
 	}
 
-	@Test(dependsOnMethods = "test")
-	public void cached() throws Exception {
-		BocasExerciser.cached(memory);
+	/*
+	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.BocasEntry#getValue()
+	 */
+	@Override
+	public DirectBocasValue getValue() {
+		return value;
 	}
 
-	@Test(dependsOnMethods = "cached")
-	public void fallback() throws Exception {
-		BocasExerciser.fallback(memory);
+	/*
+	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.BocasEntry#direct()
+	 */
+	@Override
+	public DirectBocasEntry direct() {
+		return this;
 	}
-
 }

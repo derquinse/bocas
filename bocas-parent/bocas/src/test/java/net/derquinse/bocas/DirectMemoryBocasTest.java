@@ -18,10 +18,10 @@ package net.derquinse.bocas;
 import org.testng.annotations.Test;
 
 /**
- * Test for {@link MemoryBocas}.
+ * Test for {@link DirectMemoryBocas}.
  */
-public class MemoryBocasTest {
-	private Bocas memory = BocasServices.memory();
+public class DirectMemoryBocasTest {
+	private Bocas memory = BocasServices.direct();
 
 	@Test
 	public void test() throws Exception {

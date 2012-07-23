@@ -29,7 +29,7 @@ import com.google.common.collect.ForwardingObject;
 import com.google.common.io.InputSupplier;
 
 /**
- * A BOCAS repository that forwards all its method calls to another.
+ * A Bocas repository that forwards all its method calls to another.
  * @author Andres Rodriguez.
  */
 @Beta

@@ -25,13 +25,13 @@ import com.google.common.io.ByteStreams;
 import com.google.common.io.InputSupplier;
 
 /**
- * A BOCAS repository value.
+ * A Bocas repository value.
  * @author Andres Rodriguez.
  */
 @Beta
 public abstract class BocasValue implements InputSupplier<InputStream> {
 	static <T> T checkPayload(T payload) {
-		return checkNotNull(payload, "The BOCAS value payload must be provided");
+		return checkNotNull(payload, "The Bocas value payload must be provided");
 	}
 
 	/**
@@ -77,9 +77,13 @@ public abstract class BocasValue implements InputSupplier<InputStream> {
 	 * @throws BocasException if unable to load the payload.
 	 */
 	public static LoadedBocasValue loaded(InputSupplier<? extends InputStream> payload) {
-		if (payload instanceof LoadedBocasValue) {
-			return (LoadedBocasValue) payload;
+		if (payload instanceof BocasValue) {
+			return ((BocasValue) payload).load();
 		}
+		return internalLoaded(payload);
+	}
+
+	private static LoadedBocasValue internalLoaded(InputSupplier<? extends InputStream> payload) {
 		try {
 			byte[] data = ByteStreams.toByteArray(checkPayload(payload));
 			return new LoadedBocasValue(data);
@@ -103,6 +107,43 @@ public abstract class BocasValue implements InputSupplier<InputStream> {
 		}
 	}
 
+	/**
+	 * Creates a new value loaded into a direct byte buffer.
+	 * @param payload Value payload.
+	 * @return The created value.
+	 * @throws BocasException if unable to load the payload.
+	 */
+	public static DirectBocasValue direct(InputSupplier<? extends InputStream> payload) {
+		if (payload instanceof BocasValue) {
+			return ((BocasValue) payload).direct();
+		}
+		return internalDirect(payload);
+	}
+
+	private static DirectBocasValue internalDirect(InputSupplier<? extends InputStream> payload) {
+		try {
+			byte[] data = ByteStreams.toByteArray(checkPayload(payload));
+			return new DirectBocasValue(data);
+		} catch (IOException e) {
+			throw new BocasException(e);
+		}
+	}
+
+	/**
+	 * Creates a new value loaded into a direct byte buffer.
+	 * @param payload Value payload.
+	 * @return The created value.
+	 * @throws BocasException if unable to load the payload.
+	 */
+	public static DirectBocasValue direct(InputStream payload) {
+		try {
+			byte[] data = ByteStreams.toByteArray(checkPayload(payload));
+			return new DirectBocasValue(data);
+		} catch (IOException e) {
+			throw new BocasException(e);
+		}
+	}
+
 	/** Constructor. */
 	BocasValue() {
 	}
@@ -110,10 +151,25 @@ public abstract class BocasValue implements InputSupplier<InputStream> {
 	/** Returns the payload size in bytes (if known). */
 	public abstract Integer getSize();
 
+	/** Copies and returns the internal data. */
+	public byte[] toByteArray() throws IOException {
+		return ByteStreams.toByteArray(this);
+	}
+
 	/**
 	 * Turns this value into a loaded one.
 	 * @throws BocasException if unable to load the payload.
 	 */
-	public abstract LoadedBocasValue load();
+	public LoadedBocasValue load() {
+		return internalLoaded(this);
+	}
+
+	/**
+	 * Turns this value into a direct one.
+	 * @throws BocasException if unable to load the payload.
+	 */
+	public DirectBocasValue direct() {
+		return internalDirect(this);
+	}
 
 }

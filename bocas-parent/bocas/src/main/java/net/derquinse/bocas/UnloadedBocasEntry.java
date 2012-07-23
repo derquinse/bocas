@@ -18,7 +18,7 @@ package net.derquinse.bocas;
 import com.google.common.annotations.Beta;
 
 /**
- * A BOCAS repository entry.
+ * A Bocas repository entry.
  * @author Andres Rodriguez.
  */
 @Beta
@@ -26,7 +26,7 @@ final class UnloadedBocasEntry extends BocasEntry {
 	/** Payload. */
 	private final BocasValue value;
 
-	UnloadedBocasEntry(BocasValue value) {
+	UnloadedBocasEntry(UnloadedBocasValue value) {
 		super(value);
 		this.value = value;
 	}
@@ -38,15 +38,5 @@ final class UnloadedBocasEntry extends BocasEntry {
 	@Override
 	public BocasValue getValue() {
 		return value;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.BocasEntry#load()
-	 */
-	@Override
-	public LoadedBocasEntry load() {
-		// TODO
-		return null;
 	}
 }

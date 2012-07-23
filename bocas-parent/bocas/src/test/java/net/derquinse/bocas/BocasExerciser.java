@@ -40,7 +40,7 @@ import com.google.common.io.ByteStreams;
 import com.google.common.io.InputSupplier;
 
 /**
- * BOCAS repository exerciser.
+ * Bocas repository exerciser.
  */
 public final class BocasExerciser {
 	/** Repository. */
@@ -57,10 +57,36 @@ public final class BocasExerciser {
 		assertEquals(ByteStreams.toByteArray(data), ByteStreams.toByteArray(entry.getValue()));
 	}
 
-	/** Exercise a BOCAS repository. */
+	/** Exercise a Bocas repository. */
 	public static void exercise(Bocas bocas) throws Exception {
 		BocasExerciser e = new BocasExerciser(bocas);
 		e.run();
+	}
+
+	/** Exercise a Bocas repository putting a cache in front of it. */
+	public static void cached(Bocas bocas) throws Exception {
+		Bocas cache = BocasServices.cache(bocas, 1000L, 10L, TimeUnit.MINUTES);
+		exercise(cache);
+		BocasEntry e = data();
+		bocas.put(e.getValue());
+		assertTrue(cache.contains(e.getKey()));
+	}
+
+	/** Exercise a Bocas repository putting it as the fallback of a memory one. */
+	public static void fallback(Bocas bocas) throws Exception {
+		final Bocas primary = BocasServices.memory();
+		final Bocas fallback = BocasServices.fallback(primary, bocas);
+		BocasExerciser.exercise(fallback);
+		BocasEntry e;
+		do {
+			e = data();
+		} while (bocas.contains(e.getKey()));
+		assertFalse(primary.contains(e.getKey()));
+		assertFalse(fallback.contains(e.getKey()));
+		bocas.put(e.getValue());
+		assertTrue(bocas.contains(e.getKey()));
+		assertFalse(primary.contains(e.getKey()));
+		assertTrue(fallback.contains(e.getKey()));
 	}
 
 	private BocasExerciser(Bocas bocas) {
@@ -76,7 +102,10 @@ public final class BocasExerciser {
 		check(entry, optional.get());
 		Map<ByteString, BocasValue> map = bocas.get(ImmutableSet.of(k));
 		assertTrue(map.containsKey(k));
-		check(entry, map.get(k));
+		// Check with repeatable read
+		for (int i = 0; i < 5; i++) {
+			check(entry, map.get(k));
+		}
 	}
 
 	private void put(BocasEntry entry) throws IOException {

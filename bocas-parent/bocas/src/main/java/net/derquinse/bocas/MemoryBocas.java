@@ -15,103 +15,20 @@
  */
 package net.derquinse.bocas;
 
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
-
-import net.derquinse.common.base.ByteString;
-
 import com.google.common.annotations.Beta;
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.MapMaker;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 /**
- * A memory-based Bocas repository.
+ * A heap-based Bocas repository.
  * @author Andres Rodriguez.
  */
 @Beta
-final class MemoryBocas extends SkeletalBocasBackend {
-	/** Repository. */
-	private final ConcurrentMap<ByteString, LoadedBocasValue> repository = new MapMaker().makeMap();
-
+final class MemoryBocas extends AbstractMemoryBocas<LoadedBocasValue> {
 	/** Constructor. */
 	MemoryBocas() {
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#contains(net.derquinse.common.base.ByteString)
-	 */
 	@Override
-	public boolean contains(ByteString key) {
-		return repository.containsKey(key);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#contained(java.lang.Iterable)
-	 */
-	@Override
-	public Set<ByteString> contained(Iterable<ByteString> keys) {
-		final Set<ByteString> requested;
-		if (keys instanceof Set) {
-			requested = (Set<ByteString>) keys;
-		} else {
-			requested = Sets.newHashSet(keys);
-		}
-		if (requested.isEmpty()) {
-			return ImmutableSet.of();
-		}
-		return Sets.intersection(requested, repository.keySet()).immutableCopy();
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#get(net.derquinse.common.base.ByteString)
-	 */
-	@Override
-	public Optional<BocasValue> get(ByteString key) {
-		BocasValue value = repository.get(key);
-		return Optional.fromNullable(value);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#get(java.lang.Iterable)
-	 */
-	@Override
-	public Map<ByteString, BocasValue> get(Iterable<ByteString> keys) {
-		Map<ByteString, BocasValue> map = Maps.newHashMap();
-		for (ByteString key : keys) {
-			BocasValue value = repository.get(key);
-			if (value != null) {
-				map.put(key, value);
-			}
-		}
-		return map;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.SkeletalBocasBackend#put(net.derquinse.bocas.LoadedBocasEntry)
-	 */
-	@Override
-	protected void put(LoadedBocasEntry entry) {
-		repository.putIfAbsent(entry.getKey(), entry.getValue());
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.SkeletalBocasBackend#put(java.util.Map)
-	 */
-	@Override
-	protected void put(Map<ByteString, LoadedBocasValue> entries) {
-		for (Entry<ByteString, LoadedBocasValue> entry : entries.entrySet()) {
-			repository.putIfAbsent(entry.getKey(), entry.getValue());
-		}
+	LoadedBocasValue toValue(LoadedBocasValue value) {
+		return value;
 	}
 }

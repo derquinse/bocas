@@ -19,7 +19,7 @@ import com.google.common.annotations.Beta;
 import com.google.common.cache.CacheStats;
 
 /**
- * Interface for a caching BOCAS repository. Even though the statistics are based on Guava's
+ * Interface for a caching Bocas repository. Even though the statistics are based on Guava's
  * {@link CacheStats} objects implementations are not required to use Guava's caches.
  * @author Andres Rodriguez.
  */

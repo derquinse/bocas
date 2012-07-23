@@ -22,16 +22,21 @@ import net.derquinse.common.base.NotInstantiable;
 import com.google.common.annotations.Beta;
 
 /**
- * Factory class for BOCAS services and repositories.
+ * Factory class for Bocas services and repositories.
  */
 @Beta
 public final class BocasServices extends NotInstantiable {
 	private BocasServices() {
 	}
 
-	/** Creates a new memory-based repository. */
+	/** Creates a new heap-based repository. */
 	public static Bocas memory() {
 		return new MemoryBocas();
+	}
+
+	/** Creates a new memory-based repository based on direct buffers. */
+	public static Bocas direct() {
+		return new DirectMemoryBocas();
 	}
 
 	/** Creates a new unweighted cached repository. */
