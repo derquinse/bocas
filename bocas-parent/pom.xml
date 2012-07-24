@@ -32,6 +32,17 @@
 			</dependency>
 		</dependencies>
 	</dependencyManagement>
+	<build>
+		<plugins>
+			<plugin>
+				<artifactId>maven-javadoc-plugin</artifactId>
+				<configuration>
+					<doctitle>Derquinse Bocas (version ${project.version})</doctitle>
+					<windowtitle>Derquinse Bocas API</windowtitle>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
 	<dependencies>
 		<dependency>
 			<groupId>net.derquinse</groupId>

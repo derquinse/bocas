@@ -19,18 +19,18 @@ import com.google.common.annotations.Beta;
 import com.google.common.cache.CacheBuilder;
 
 /**
- * A Guava-cache-based Bocas caching repository.
+ * A Guava-cache-based Bocas caching repository based on direct buffers.
  * @author Andres Rodriguez.
  */
 @Beta
-final class GuavaCachingBocas extends AbstractGuavaCachingBocas<LoadedBocasValue> {
+final class DirectGuavaCachingBocas extends AbstractGuavaCachingBocas<DirectBocasValue> {
 	/** Constructor. */
-	GuavaCachingBocas(CacheBuilder<Object, Object> builder, Bocas bocas) {
+	DirectGuavaCachingBocas(CacheBuilder<Object, Object> builder, Bocas bocas) {
 		super(builder, bocas);
 	}
 
 	@Override
-	LoadedBocasValue toValue(BocasValue value) {
-		return value.load();
+	DirectBocasValue toValue(BocasValue value) {
+		return value.direct();
 	}
 }

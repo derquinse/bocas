@@ -65,9 +65,16 @@ public final class BocasExerciser {
 
 	/** Exercise a Bocas repository putting a cache in front of it. */
 	public static void cached(Bocas bocas) throws Exception {
-		Bocas cache = BocasServices.cache(bocas, 1000L, 10L, TimeUnit.MINUTES);
+		// Heap cache
+		Bocas cache = BocasServices.cache().expireAfterAccess(10L, TimeUnit.MINUTES).maximumSize(1000).build(bocas);
 		exercise(cache);
 		BocasEntry e = data();
+		bocas.put(e.getValue());
+		assertTrue(cache.contains(e.getKey()));
+		// Direct cache
+		cache = BocasServices.cache().expireAfterAccess(10L, TimeUnit.MINUTES).maximumWeight(10000000L).buildDirect(bocas);
+		exercise(cache);
+		e = data();
 		bocas.put(e.getValue());
 		assertTrue(cache.contains(e.getKey()));
 	}
