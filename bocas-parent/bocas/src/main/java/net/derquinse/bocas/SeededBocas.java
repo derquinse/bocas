@@ -31,27 +31,37 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 /**
- * A Bocas repository based on a primary and a fallback one. Writes are not propagated to the
- * fallback.
+ * A Bocas transformer that fetches entries missing in the primary repository from the provided seed.
  * @author Andres Rodriguez.
  */
 @Beta
-final class FallbackBocas extends ForwardingBocas {
+final class SeededBocas extends ForwardingBocas {
 	/** Primary repository. */
 	private final Bocas primary;
-	/** Fallback repository. */
-	private final Bocas fallback;
+	/** Seed repository. */
+	private final Bocas seed;
 
 	/** Constructor. */
-	FallbackBocas(Bocas primary, Bocas fallback) {
-		this.primary = checkNotNull(primary);
-		this.fallback = checkNotNull(fallback);
-		checkArgument(primary != fallback, "Primary and fallback repositories should not be the same");
+	SeededBocas(Bocas primary, Bocas seed) {
+		this.primary = checkNotNull(primary, "The primary repository must be provided");
+		this.seed = checkNotNull(seed, "The seed repository must be provided");
+		checkArgument(primary != seed, "Primary and seed repositories should not be the same");
 	}
 
 	@Override
 	protected Bocas delegate() {
 		return primary;
+	}
+	
+	/** Transforms a collection of keys into a set. */
+	private Set<ByteString> getRequested(Iterable<ByteString> keys) {
+		final Set<ByteString> requested;
+		if (keys instanceof Set) {
+			requested = (Set<ByteString>) keys;
+		} else {
+			requested = Sets.newHashSet(keys);
+		}
+		return requested;
 	}
 
 	/*
@@ -63,7 +73,7 @@ final class FallbackBocas extends ForwardingBocas {
 		if (primary.contains(key)) {
 			return true;
 		}
-		return fallback.contains(key);
+		return seed.contains(key);
 	}
 
 	/*
@@ -72,21 +82,16 @@ final class FallbackBocas extends ForwardingBocas {
 	 */
 	@Override
 	public Set<ByteString> contained(Iterable<ByteString> keys) {
-		final Set<ByteString> requested;
-		if (keys instanceof Set) {
-			requested = (Set<ByteString>) keys;
-		} else {
-			requested = Sets.newHashSet(keys);
-		}
+		final Set<ByteString> requested = getRequested(keys);
 		if (requested.isEmpty()) {
 			return ImmutableSet.of();
 		}
 		Set<ByteString> inPrimary = primary.contained(requested);
-		Set<ByteString> askFallback = Sets.difference(requested, inPrimary).immutableCopy();
-		if (askFallback.isEmpty()) {
+		Set<ByteString> askSeed = Sets.difference(requested, inPrimary).immutableCopy();
+		if (askSeed.isEmpty()) {
 			return inPrimary;
 		}
-		Set<ByteString> inSecondary = fallback.contained(askFallback);
+		Set<ByteString> inSecondary = seed.contained(askSeed);
 		return Sets.union(inPrimary, inSecondary).immutableCopy();
 	}
 
@@ -100,7 +105,7 @@ final class FallbackBocas extends ForwardingBocas {
 		if (p.isPresent()) {
 			return p;
 		} else {
-			return fallback.get(key);
+			return seed.get(key);
 		}
 	}
 
@@ -110,12 +115,7 @@ final class FallbackBocas extends ForwardingBocas {
 	 */
 	@Override
 	public Map<ByteString, BocasValue> get(Iterable<ByteString> keys) {
-		final Set<ByteString> requested;
-		if (keys instanceof Set) {
-			requested = (Set<ByteString>) keys;
-		} else {
-			requested = Sets.newHashSet(keys);
-		}
+		final Set<ByteString> requested = getRequested(keys);
 		if (requested.isEmpty()) {
 			return ImmutableMap.of();
 		}
@@ -124,7 +124,7 @@ final class FallbackBocas extends ForwardingBocas {
 		if (askFallback.isEmpty()) {
 			return inPrimary;
 		}
-		Map<ByteString, BocasValue> inSecondary = fallback.get(askFallback);
+		Map<ByteString, BocasValue> inSecondary = seed.get(askFallback);
 		if (inSecondary.isEmpty()) {
 			return inPrimary;
 		}

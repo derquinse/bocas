@@ -43,11 +43,11 @@ public final class BocasServices extends NotInstantiable {
 	}
 
 	/**
-	 * Creates a new bocas repository based on a primary and a fallback one. Writes are not propagated
-	 * to the fallback repository.
+	 * Creates a new bocas repository that fetches entries missing in the primary repository from the
+	 * provided seed. Writes are not propagated to the seed.
 	 */
-	public static Bocas fallback(Bocas primary, Bocas fallback) {
-		return new FallbackBocas(primary, fallback);
+	public static Bocas seeded(Bocas primary, Bocas seed) {
+		return new SeededBocas(primary, seed);
 	}
 
 }

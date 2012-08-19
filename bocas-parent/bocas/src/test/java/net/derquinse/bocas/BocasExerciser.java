@@ -79,10 +79,10 @@ public final class BocasExerciser {
 		assertTrue(cache.contains(e.getKey()));
 	}
 
-	/** Exercise a Bocas repository putting it as the fallback of a memory one. */
+	/** Exercise a Bocas repository putting it as the seed of a memory one. */
 	public static void fallback(Bocas bocas) throws Exception {
 		final Bocas primary = BocasServices.memory();
-		final Bocas fallback = BocasServices.fallback(primary, bocas);
+		final Bocas fallback = BocasServices.seeded(primary, bocas);
 		BocasExerciser.exercise(fallback);
 		BocasEntry e;
 		do {
