@@ -40,7 +40,7 @@ import com.sun.jersey.test.framework.LowLevelAppDescriptor;
  * @author Andres Rodriguez
  */
 public class BocasJerseyTest extends JerseyTest {
-	static final Bocas SERVER = BocasServices.memory(); 
+	static final Bocas SERVER = BocasServices.memory();
 
 	private static LowLevelAppDescriptor descriptor() {
 		Set<Class<?>> set = Sets.newHashSet();
@@ -50,15 +50,14 @@ public class BocasJerseyTest extends JerseyTest {
 		return new LowLevelAppDescriptor.Builder(classes).build();
 	}
 
-	public BocasJerseyTest() {
+	public BocasJerseyTest() throws InterruptedException {
 		super(descriptor());
+		Thread.sleep(2000);
 	}
-	
+
 	@Test
 	public void test() throws Exception {
 		Bocas client = BocasClientFactory.create().get(getBaseURI());
-		// Thread.sleep(1000);
-		// BocasExerciser.exercise(client);
 		byte[] data = RandomSupport.getBytes(3072);
 		ByteString key = client.put(ByteStreams.newInputStreamSupplier(data));
 		assertTrue(SERVER.contains(key));
