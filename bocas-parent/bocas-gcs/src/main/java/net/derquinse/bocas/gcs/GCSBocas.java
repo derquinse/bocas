@@ -15,14 +15,27 @@
  */
 package net.derquinse.bocas.gcs;
 
+import java.io.File;
+
+import net.derquinse.bocas.BocasService;
 import net.derquinse.common.base.NotInstantiable;
 
 /**
- * Factory class for Bocas repositories and buckets based on Google Cloud Storage.
+ * Factory class for Bocas repositories based on Google Cloud Storage.
  * @author Andres Rodriguez.
  */
 public final class GCSBocas extends NotInstantiable {
 	private GCSBocas() {
+	}
+
+	/**
+	 * Creates a new service using service account authentication.
+	 * @param email Account email address.
+	 * @param p12 Private key file.
+	 * @return The requested service.
+	 */
+	public static BocasService service(String email, File p12) {
+		return new GCSBocasService(email, p12);
 	}
 
 }

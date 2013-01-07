@@ -50,12 +50,12 @@ public final class BocasExerciser {
 	/** Number of tasks. */
 	private final int tasks;
 
-	static LoadedBocasValue data() {
+	public static LoadedBocasValue data() {
 		byte[] data = RandomSupport.getBytes(RandomSupport.nextInt(1024, 10240));
 		return BocasValue.of(data);
 	}
 
-	private static void check(LoadedBocasValue value, InputSupplier<? extends InputStream> data) throws IOException {
+	public static void check(LoadedBocasValue value, InputSupplier<? extends InputStream> data) throws IOException {
 		assertEquals(ByteStreams.toByteArray(data), ByteStreams.toByteArray(value));
 	}
 
