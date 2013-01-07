@@ -27,7 +27,7 @@ public interface BocasService {
 	/**
 	 * Returns the bucket with the requested name.
 	 * @throws NullPointerException if the argument is {@code null}.
-	 * @thorows IllegalArgumentException if there is no bucket with the provided name.
+	 * @throws IllegalArgumentException if there is no bucket with the provided name.
 	 */
 	Bocas getBucket(String name);
 }
