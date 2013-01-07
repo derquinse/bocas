@@ -19,7 +19,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.net.URI;
 
-import net.derquinse.bocas.Bocas;
+import net.derquinse.bocas.BocasService;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.WebResource;
@@ -47,13 +47,13 @@ public final class BocasClientFactory {
 	}
 
 	/**
-	 * Creates a new client.
+	 * Creates a new repository client.
 	 * @param uri Service URI.
 	 * @return The requested service client.
 	 */
-	public Bocas get(URI uri) {
+	public BocasService get(URI uri) {
 		WebResource resource = client.resource(checkNotNull(uri, "The indexer service URI must be provided"));
-		return new BocasClient(resource);
+		return new BocasServiceClient(resource);
 	}
 
 }

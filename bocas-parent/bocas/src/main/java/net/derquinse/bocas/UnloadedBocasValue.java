@@ -24,8 +24,7 @@ import com.google.common.annotations.Beta;
 import com.google.common.io.InputSupplier;
 
 /**
- * A Bocas repository value loaded into an in-memory byte array. This class is provided as a support
- * for repository implementations.
+ * An unloaded bocas value.
  * @author Andres Rodriguez.
  */
 @Beta

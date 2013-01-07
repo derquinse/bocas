@@ -29,7 +29,7 @@ import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
 
 /**
- * Factory class for Bocas repositories based on Berkeley DB Java Edition.
+ * Factory class for Bocas repositories and buckets based on Berkeley DB Java Edition.
  * @author Andres Rodriguez.
  */
 public final class JEBocas extends NotInstantiable {
@@ -37,7 +37,7 @@ public final class JEBocas extends NotInstantiable {
 	}
 
 	/**
-	 * Creates a new repository based on a basic environment in the provided directory.
+	 * Creates a new bucket based on a basic environment in the provided directory.
 	 * @param directory Database environment directory. It must be an existing directory.
 	 * @return The created service.
 	 * @throws IllegalArgumentException if the argument is not an existing directory.

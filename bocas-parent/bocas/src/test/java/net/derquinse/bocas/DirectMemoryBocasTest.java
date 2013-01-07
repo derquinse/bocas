@@ -21,21 +21,21 @@ import org.testng.annotations.Test;
  * Test for {@link DirectMemoryBocas}.
  */
 public class DirectMemoryBocasTest {
-	private Bocas memory = BocasServices.direct();
+	private BocasService memory = BocasServices.shared(BocasServices.directBucket());
 
 	@Test
 	public void test() throws Exception {
-		BocasExerciser.exercise(memory);
+		BocasExerciser.exercise(memory.getBucket("test"));
 	}
 
 	@Test(dependsOnMethods = "test")
 	public void cached() throws Exception {
-		BocasExerciser.cached(memory);
+		BocasExerciser.cached(memory, "test");
 	}
 
 	@Test(dependsOnMethods = "cached")
 	public void fallback() throws Exception {
-		BocasExerciser.fallback(memory);
+		BocasExerciser.fallback(memory, "test");
 	}
 
 }

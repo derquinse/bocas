@@ -13,39 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.derquinse.bocas;
+package net.derquinse.bocas.jersey.client;
 
-import com.google.common.annotations.Beta;
+import static com.google.common.base.Preconditions.checkNotNull;
+import net.derquinse.bocas.Bocas;
+import net.derquinse.bocas.BocasService;
+
+import com.sun.jersey.api.client.WebResource;
 
 /**
- * A Bocas repository value loaded into an in-memory byte array.
+ * Bocas repository client based on Jersey (JAX-RS).
  * @author Andres Rodriguez.
  */
-@Beta
-public final class LoadedBocasEntry extends BocasEntry {
-	/** Payload. */
-	private final LoadedBocasValue value;
+final class BocasServiceClient implements BocasService {
+	/** Root resource. */
+	private final WebResource resource;
 
-	LoadedBocasEntry(LoadedBocasValue value) {
-		super(value);
-		this.value = value;
+	BocasServiceClient(WebResource resource) {
+		this.resource = checkNotNull(resource, "The root resource must be provided");
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.BocasEntry#getValue()
-	 */
 	@Override
-	public LoadedBocasValue getValue() {
-		return value;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.BocasEntry#load()
-	 */
-	@Override
-	public LoadedBocasEntry load() {
-		return this;
+	public Bocas getBucket(String name) {
+		checkNotNull(name);
+		return new BocasClient(resource.path(name)); // TODO ping bucket.
 	}
 }

@@ -18,17 +18,21 @@ package net.derquinse.bocas;
 import com.google.common.annotations.Beta;
 
 /**
- * An off-heap-memory-based Bocas repository.
+ * An off-heap-memory-based bocas bucket.
  * @author Andres Rodriguez.
  */
 @Beta
-final class DirectMemoryBocas extends AbstractMemoryBocas<DirectBocasValue> {
+final class DirectMemoryBocas extends AbstractMemoryBocas {
 	/** Constructor. */
 	DirectMemoryBocas() {
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.SkeletalBocas#toValue(net.derquinse.bocas.BocasValue)
+	 */
 	@Override
-	DirectBocasValue toValue(LoadedBocasValue value) {
-		return value.direct();
+	protected DirectBocasValue load(BocasValue value) {
+		return value.toDirect();
 	}
 }

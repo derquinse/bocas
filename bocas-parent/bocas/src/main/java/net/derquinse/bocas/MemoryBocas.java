@@ -22,13 +22,17 @@ import com.google.common.annotations.Beta;
  * @author Andres Rodriguez.
  */
 @Beta
-final class MemoryBocas extends AbstractMemoryBocas<LoadedBocasValue> {
+final class MemoryBocas extends AbstractMemoryBocas {
 	/** Constructor. */
 	MemoryBocas() {
 	}
 
+	/*
+	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.SkeletalBocas#toValue(net.derquinse.bocas.BocasValue)
+	 */
 	@Override
-	LoadedBocasValue toValue(LoadedBocasValue value) {
-		return value;
+	protected HeapBocasValue load(BocasValue value) {
+		return value.toHeap();
 	}
 }

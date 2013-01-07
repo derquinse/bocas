@@ -15,21 +15,18 @@
  */
 package net.derquinse.bocas;
 
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import net.derquinse.common.base.ByteString;
-import net.derquinse.common.util.zip.MaybeCompressed;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Optional;
-import com.google.common.io.InputSupplier;
 
 /**
- * Interface for a Bocas repository. Guava library is expected to provide a ByteString object. The
- * use of the one from derquinse-commons is temporary.
+ * Interface for a Bocas repository bucket. Guava library is expected to provide a ByteString
+ * object. The use of the one from derquinse-commons is temporary.
  * @author Andres Rodriguez.
  */
 @Beta
@@ -63,61 +60,16 @@ public interface Bocas {
 	Map<ByteString, BocasValue> get(Iterable<ByteString> keys);
 
 	/**
-	 * Puts an object into the repository.
+	 * Puts a value into the repository.
 	 * @return The generated key.
 	 * @throws BocasException if an error occurs.
 	 */
-	ByteString put(InputSupplier<? extends InputStream> object);
+	ByteString put(BocasValue value);
 
 	/**
-	 * Puts an object into the repository.
-	 * @return The generated key.
-	 * @throws BocasException if an error occurs.
-	 */
-	ByteString put(InputStream object);
-
-	/**
-	 * Puts some objects into the repository in a single operation. The operation must be atomic.
+	 * Puts some values into the repository in a single operation. The operation must be atomic.
 	 * @return The list of generated keys, in the same order than the objects provided.
 	 * @throws BocasException if an error occurs.
 	 */
-	List<ByteString> putSuppliers(List<? extends InputSupplier<? extends InputStream>> objects);
-
-	/**
-	 * Puts some objects into the repository in a single operation. The operation must be atomic.
-	 * @return The list of generated keys, in the same order than the objects provided.
-	 * @throws BocasException if an error occurs.
-	 */
-	List<ByteString> putStreams(List<? extends InputStream> objects);
-
-	/**
-	 * Puts a zip object into the repository.
-	 * @return A map from the zip entry names to their keys.
-	 * @throws BocasException if an error occurs.
-	 */
-	Map<String, ByteString> putZip(InputStream object);
-
-	/**
-	 * Puts a zip object into the repository.
-	 * @return A map from the zip entry names to their keys.
-	 * @throws BocasException if an error occurs.
-	 */
-	Map<String, ByteString> putZip(InputSupplier<? extends InputStream> object);
-
-	/**
-	 * Puts a zip object into the repository trying to compress them individually with gzip.
-	 * @return A map from the zip entry names to their keys, indicating if the entry has been
-	 *         compressed.
-	 * @throws BocasException if an error occurs.
-	 */
-	Map<String, MaybeCompressed<ByteString>> putZipAndGZip(InputStream object);
-
-	/**
-	 * Puts a zip object into the repository trying to compress them individually with gzip.
-	 * @return A map from the zip entry names to their keys, indicating if the entry has been
-	 *         compressed.
-	 * @throws BocasException if an error occurs.
-	 */
-	Map<String, MaybeCompressed<ByteString>> putZipAndGZip(InputSupplier<? extends InputStream> object);
-
+	List<ByteString> putAll(Iterable<? extends BocasValue> values);
 }

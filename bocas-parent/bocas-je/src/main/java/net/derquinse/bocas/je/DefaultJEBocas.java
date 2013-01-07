@@ -30,9 +30,8 @@ import javax.annotation.concurrent.GuardedBy;
 
 import net.derquinse.bocas.BocasException;
 import net.derquinse.bocas.BocasValue;
-import net.derquinse.bocas.LoadedBocasEntry;
 import net.derquinse.bocas.LoadedBocasValue;
-import net.derquinse.bocas.SkeletalBocasBackend;
+import net.derquinse.bocas.SkeletalBocas;
 import net.derquinse.common.base.ByteString;
 
 import com.google.common.annotations.Beta;
@@ -53,7 +52,7 @@ import com.sleepycat.je.Transaction;
  * @author Andres Rodriguez.
  */
 @Beta
-final class DefaultJEBocas extends SkeletalBocasBackend {
+final class DefaultJEBocas extends SkeletalBocas {
 	/** Database name. */
 	private static final String DB_NAME = "BocasDB";
 	/** Database environment. */
@@ -82,6 +81,15 @@ final class DefaultJEBocas extends SkeletalBocasBackend {
 		dc.setTransactional(true);
 		dc.setReadOnly(false);
 		this.database = e.openDatabase(null, DB_NAME, dc);
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.SkeletalBocas#load(net.derquinse.bocas.BocasValue)
+	 */
+	@Override
+	protected LoadedBocasValue load(BocasValue value) {
+		return value.toLoaded();
 	}
 
 	/** Closes the database. */
@@ -190,24 +198,25 @@ final class DefaultJEBocas extends SkeletalBocasBackend {
 
 	/*
 	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.SkeletalBocasBackend#put(net.derquinse.bocas.LoadedBocasEntry)
+	 * @see net.derquinse.bocas.SkeletalBocas#put(net.derquinse.common.base.ByteString,
+	 * net.derquinse.bocas.LoadedBocasValue)
 	 */
 	@Override
-	protected void put(final LoadedBocasEntry entry) {
+	protected void put(final ByteString key, final LoadedBocasValue value) {
 		new Put() {
 			@Override
 			void put() throws IOException {
-				write(entry);
+				write(key, value);
 			}
 		}.run();
 	}
 
 	/*
 	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.SkeletalBocasBackend#put(java.util.Map)
+	 * @see net.derquinse.bocas.SkeletalBocas#putAll(java.util.Map)
 	 */
 	@Override
-	protected void put(final Map<ByteString, LoadedBocasValue> entries) {
+	protected void putAll(final Map<ByteString, LoadedBocasValue> entries) {
 		new Put() {
 			@Override
 			void put() throws IOException {
@@ -280,14 +289,6 @@ final class DefaultJEBocas extends SkeletalBocasBackend {
 			DatabaseEntry k = key(key);
 			DatabaseEntry v = new DatabaseEntry(ByteStreams.toByteArray(value));
 			database.putNoOverwrite(tx, k, v);
-		}
-
-		/**
-		 * Writes an entry, if absent
-		 * @param entry Entry to write.
-		 */
-		final void write(LoadedBocasEntry entry) throws IOException {
-			write(entry.getKey(), entry.getValue());
 		}
 
 		abstract T perform() throws IOException;

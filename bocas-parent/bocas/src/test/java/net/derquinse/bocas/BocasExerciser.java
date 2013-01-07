@@ -40,120 +40,139 @@ import com.google.common.io.ByteStreams;
 import com.google.common.io.InputSupplier;
 
 /**
- * Bocas repository exerciser.
+ * Bocas bucket exerciser.
  */
 public final class BocasExerciser {
 	/** Repository. */
 	private final Bocas bocas;
 	/** Error flag. */
 	private boolean ok = true;
+	/** Number of tasks. */
+	private final int tasks;
 
-	static BocasEntry data() {
+	static LoadedBocasValue data() {
 		byte[] data = RandomSupport.getBytes(RandomSupport.nextInt(1024, 10240));
-		return BocasEntry.of(ByteStreams.newInputStreamSupplier(data));
+		return BocasValue.of(data);
 	}
 
-	private static void check(BocasEntry entry, InputSupplier<? extends InputStream> data) throws IOException {
-		assertEquals(ByteStreams.toByteArray(data), ByteStreams.toByteArray(entry.getValue()));
+	private static void check(LoadedBocasValue value, InputSupplier<? extends InputStream> data) throws IOException {
+		assertEquals(ByteStreams.toByteArray(data), ByteStreams.toByteArray(value));
+	}
+
+	/** Exercise a Bocas repository. */
+	public static void exercise(Bocas bocas, int tasks) throws Exception {
+		BocasExerciser e = new BocasExerciser(bocas, tasks);
+		e.run();
 	}
 
 	/** Exercise a Bocas repository. */
 	public static void exercise(Bocas bocas) throws Exception {
-		BocasExerciser e = new BocasExerciser(bocas);
-		e.run();
+		exercise(bocas, 1000);
 	}
 
 	/** Exercise a Bocas repository putting a cache in front of it. */
-	public static void cached(Bocas bocas) throws Exception {
+	public static void cached(BocasService service, String bucketName) throws Exception {
+		final Bocas bucket = service.getBucket(bucketName);
 		// Heap cache
-		Bocas cache = BocasServices.cache().expireAfterAccess(10L, TimeUnit.MINUTES).maximumSize(1000).build(bocas);
-		exercise(cache);
-		BocasEntry e = data();
-		bocas.put(e.getValue());
-		assertTrue(cache.contains(e.getKey()));
+		BocasService cache = BocasServices.cache().expireAfterAccess(10L, TimeUnit.MINUTES).maximumSize(1000)
+				.build(service);
+		Bocas cached = cache.getBucket(bucketName);
+		exercise(cached);
+		LoadedBocasValue value = data();
+		bucket.put(value);
+		assertTrue(cached.contains(value.key()));
 		// Direct cache
-		cache = BocasServices.cache().expireAfterAccess(10L, TimeUnit.MINUTES).maximumWeight(10000000L).buildDirect(bocas);
-		exercise(cache);
-		e = data();
-		bocas.put(e.getValue());
-		assertTrue(cache.contains(e.getKey()));
+		cache = BocasServices.cache().expireAfterAccess(10L, TimeUnit.MINUTES).maximumWeight(10000000L).direct()
+				.build(service);
+		cached = cache.getBucket(bucketName);
+		exercise(cached);
+		value = data();
+		bucket.put(value);
+		assertTrue(cached.contains(value.key()));
 	}
 
 	/** Exercise a Bocas repository putting it as the seed of a memory one. */
-	public static void fallback(Bocas bocas) throws Exception {
-		final Bocas primary = BocasServices.memory();
+	public static void fallback(BocasService service, String bucketName) throws Exception {
+		final Bocas bocas = service.getBucket(bucketName);
+		final Bocas primary = BocasServices.memoryBucket();
 		final Bocas fallback = BocasServices.seeded(primary, bocas);
 		BocasExerciser.exercise(fallback);
-		BocasEntry e;
+		LoadedBocasValue value;
+		ByteString key;
 		do {
-			e = data();
-		} while (bocas.contains(e.getKey()));
-		assertFalse(primary.contains(e.getKey()));
-		assertFalse(fallback.contains(e.getKey()));
-		bocas.put(e.getValue());
-		assertTrue(bocas.contains(e.getKey()));
-		assertFalse(primary.contains(e.getKey()));
-		assertTrue(fallback.contains(e.getKey()));
+			value = data();
+			key = value.key();
+		} while (bocas.contains(key));
+		assertFalse(primary.contains(key));
+		assertFalse(fallback.contains(key));
+		bocas.put(value);
+		assertTrue(bocas.contains(key));
+		assertFalse(primary.contains(key));
+		assertTrue(fallback.contains(key));
 	}
 
-	private BocasExerciser(Bocas bocas) {
+	private BocasExerciser(Bocas bocas, int tasks) {
 		this.bocas = checkNotNull(bocas, "The repository to exercise must be provided");
+		this.tasks = Math.max(10, tasks);
 	}
 
-	private void checkInRepository(BocasEntry entry) throws IOException {
-		ByteString k = entry.getKey();
+	private void checkInRepository(LoadedBocasValue value) throws IOException {
+		ByteString k = value.key();
 		assertTrue(bocas.contains(k));
 		assertTrue(bocas.contained(ImmutableSet.of(k)).contains(k));
 		Optional<BocasValue> optional = bocas.get(k);
 		assertTrue(optional.isPresent());
-		check(entry, optional.get());
+		check(value, optional.get());
 		Map<ByteString, BocasValue> map = bocas.get(ImmutableSet.of(k));
 		assertTrue(map.containsKey(k));
 		// Check with repeatable read
 		for (int i = 0; i < 5; i++) {
-			check(entry, map.get(k));
+			check(value, map.get(k));
 		}
 	}
 
-	private void put(BocasEntry entry) throws IOException {
-		ByteString returned = bocas.put(entry.getValue());
-		ByteString k = entry.getKey();
+	private void put(LoadedBocasValue value) throws IOException {
+		ByteString returned = bocas.put(value);
+		ByteString k = value.key();
 		assertEquals(returned, k);
-		checkInRepository(entry);
+		checkInRepository(value);
 	}
 
-	private void checkNotInRepository(BocasEntry entry) throws Exception {
-		ByteString k = entry.getKey();
+	private void checkNotInRepository(LoadedBocasValue value) throws Exception {
+		ByteString k = value.key();
 		assertFalse(bocas.contains(k));
 		assertTrue(bocas.contained(ImmutableSet.of(k)).isEmpty());
 		assertFalse(bocas.get(k).isPresent());
 		assertTrue(bocas.get(ImmutableSet.of(k)).isEmpty());
 	}
 
-	private BocasEntry create() throws Exception {
-		BocasEntry entry = data();
-		checkNotInRepository(entry);
-		return entry;
+	private LoadedBocasValue create() throws Exception {
+		LoadedBocasValue value = data();
+		checkNotInRepository(value);
+		return value;
 	}
 
 	/** Exercise the repository. */
 	private void run() throws Exception {
-		BocasEntry data1 = create();
+		LoadedBocasValue data1 = create();
+		ByteString k1 = data1.key();
 		put(data1);
-		BocasEntry data2 = create();
-		BocasEntry data3 = create();
+		LoadedBocasValue data2 = create();
+		ByteString k2 = data2.key();
+		LoadedBocasValue data3 = create();
+		ByteString k3 = data3.key();
 		put(data2);
 		checkInRepository(data1);
 		checkNotInRepository(data3);
-		BocasEntry data4 = create();
-		List<ByteString> list = ImmutableList.of(data1.getKey(), data2.getKey(), data3.getKey(), data4.getKey(),
-				data1.getKey());
+		LoadedBocasValue data4 = create();
+		ByteString k4 = data4.key();
+		List<ByteString> list = ImmutableList.of(k1, k2, k3, k4, k1);
 		assertEquals(bocas.contained(list).size(), 2);
 		assertEquals(bocas.get(list).size(), 2);
-		List<ByteString> keys = bocas.putSuppliers(ImmutableList.of(data2.getValue(), data3.getValue()));
+		List<ByteString> keys = bocas.putAll(ImmutableList.of(data2, data3));
 		assertEquals(keys.size(), 2);
-		assertEquals(keys.get(0), data2.getKey());
-		assertEquals(keys.get(1), data3.getKey());
+		assertEquals(keys.get(0), k2);
+		assertEquals(keys.get(1), k3);
 		checkInRepository(data1);
 		checkInRepository(data2);
 		checkInRepository(data3);
@@ -164,35 +183,35 @@ public final class BocasExerciser {
 		List<ByteString> keyList = Lists.newLinkedList();
 		List<BocasValue> valueList = Lists.newLinkedList();
 		for (int i = 0; i < 15; i++) {
-			BocasEntry e = create();
-			keyList.add(e.getKey());
-			valueList.add(e.getValue());
+			LoadedBocasValue e = create();
+			keyList.add(e.key());
+			valueList.add(e);
 		}
-		bocas.putSuppliers(valueList);
+		bocas.putAll(valueList);
 		assertTrue(bocas.contained(keyList).containsAll(keyList));
 		assertTrue(bocas.get(keyList).keySet().containsAll(keyList));
 		// Multiple operation - Phase II
 		for (int i = 0; i < 15; i++) {
-			BocasEntry e = create();
-			keyList.add(e.getKey());
-			valueList.add(e.getValue());
+			LoadedBocasValue e = create();
+			keyList.add(e.key());
+			valueList.add(e);
 		}
-		bocas.putSuppliers(valueList);
+		bocas.putAll(valueList);
 		assertTrue(bocas.contained(keyList).containsAll(keyList));
 		assertTrue(bocas.get(keyList).keySet().containsAll(keyList));
 		// ZIP
-		Map<String, ByteString> entries = bocas.putZip(getClass().getResourceAsStream("loren.zip"));
+		ZipBocas zb = ZipBocas.of(bocas);
+		Map<String, ByteString> entries = zb.putZip(getClass().getResourceAsStream("loren.zip"));
 		assertEquals(bocas.contained(entries.values()).size(), 3);
 		// ZIP
-		Map<String, MaybeCompressed<ByteString>> mentries = bocas
-				.putZipAndGZip(getClass().getResourceAsStream("loren.zip"));
+		Map<String, MaybeCompressed<ByteString>> mentries = zb.putZipAndGZip(getClass().getResourceAsStream("loren.zip"));
 		assertEquals(bocas.contained(entries.values()).size(), 3);
 		for (MaybeCompressed<ByteString> mk : mentries.values()) {
 			assertTrue(mk.isCompressed());
 		}
 		// Concurrent operation.
 		ExecutorService s = Executors.newFixedThreadPool(5);
-		for (int i = 0; i < 1000; i++) {
+		for (int i = 0; i < tasks; i++) {
 			s.submit(new Task());
 		}
 		s.shutdown();

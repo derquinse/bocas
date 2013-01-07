@@ -15,42 +15,33 @@
  */
 package net.derquinse.bocas;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.util.Map.Entry;
+
+import net.derquinse.common.base.ByteString;
+import net.derquinse.common.base.Digests;
 
 import com.google.common.annotations.Beta;
+import com.google.common.collect.Maps;
 
 /**
- * A Bocas repository value loaded into an in-memory byte array.
+ * A loaded bocas value.
  * @author Andres Rodriguez.
  */
 @Beta
-public final class LoadedBocasValue extends BocasValue {
-	/** Payload. */
-	private final byte[] payload;
-
+public abstract class LoadedBocasValue extends BocasValue {
 	/** Constructor. */
-	LoadedBocasValue(byte[] payload) {
-		this.payload = checkPayload(payload);
+	LoadedBocasValue() {
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.BocasValue#getSize()
-	 */
-	@Override
-	public Integer getSize() {
-		return payload.length;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see com.google.common.io.InputSupplier#getInput()
-	 */
-	@Override
-	public InputStream getInput() throws IOException {
-		return new ByteArrayInputStream(payload);
+	/** Computes the key of the loaded value. */
+	public final ByteString key() {
+		try {
+			return Digests.sha256(this);
+		} catch (IOException e) {
+			// The value is loaded, should not happen.
+			throw new BocasException(e);
+		}
 	}
 
 	/*
@@ -58,28 +49,18 @@ public final class LoadedBocasValue extends BocasValue {
 	 * @see net.derquinse.bocas.BocasValue#load()
 	 */
 	@Override
-	public LoadedBocasValue load() {
+	public final LoadedBocasValue toLoaded() {
 		return this;
 	}
 
 	/*
 	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.BocasValue#toByteArray()
+	 * @see net.derquinse.bocas.BocasValue#toEntry()
 	 */
 	@Override
-	public byte[] toByteArray() throws IOException {
-		byte[] copy = new byte[payload.length];
-		System.arraycopy(payload, 0, copy, 0, payload.length);
-		return copy;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.BocasValue#direct()
-	 */
-	@Override
-	public DirectBocasValue direct() {
-		return new DirectBocasValue(payload);
+	public final Entry<ByteString, LoadedBocasValue> toEntry() {
+		ByteString key = key();
+		return Maps.immutableEntry(key, this);
 	}
 
 }

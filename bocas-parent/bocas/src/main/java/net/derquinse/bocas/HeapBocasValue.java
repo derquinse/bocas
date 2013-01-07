@@ -15,34 +15,24 @@
  */
 package net.derquinse.bocas;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
-
-import net.derquinse.common.io.DerquinseByteStreams;
 
 import com.google.common.annotations.Beta;
-import com.google.common.io.InputSupplier;
 
 /**
- * A bocas value loaded into a direct byte buffer.
+ * A bocas value loaded into an in-heap byte array.
  * @author Andres Rodriguez.
  */
 @Beta
-public final class DirectBocasValue extends LoadedBocasValue {
-	/** Value size. */
-	private final Integer size;
-	/** Backing buffer. */
-	private final ByteBuffer buffer;
-	/** Input supplier. */
-	private final InputSupplier<InputStream> supplier;
+public final class HeapBocasValue extends LoadedBocasValue {
+	/** Payload. */
+	private final byte[] payload;
 
 	/** Constructor. */
-	DirectBocasValue(byte[] payload) {
-		this.size = checkPayload(payload).length;
-		this.buffer = ByteBuffer.allocateDirect(this.size);
-		buffer.put(payload).flip();
-		this.supplier = DerquinseByteStreams.newInputStreamSupplier(buffer);
+	HeapBocasValue(byte[] payload) {
+		this.payload = checkPayload(payload);
 	}
 
 	/*
@@ -51,7 +41,7 @@ public final class DirectBocasValue extends LoadedBocasValue {
 	 */
 	@Override
 	public Integer getSize() {
-		return size;
+		return payload.length;
 	}
 
 	/*
@@ -60,16 +50,16 @@ public final class DirectBocasValue extends LoadedBocasValue {
 	 */
 	@Override
 	public InputStream getInput() throws IOException {
-		return supplier.getInput();
+		return new ByteArrayInputStream(payload);
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see net.derquinse.bocas.BocasValue#heap()
 	 */
 	@Override
 	public HeapBocasValue toHeap() {
-		return new HeapBocasValue(toByteArray());
+		return this;
 	}
 
 	/*
@@ -77,10 +67,9 @@ public final class DirectBocasValue extends LoadedBocasValue {
 	 * @see net.derquinse.bocas.BocasValue#toByteArray()
 	 */
 	@Override
-	public byte[] toByteArray() {
-		final ByteBuffer b = buffer.slice();
-		byte[] copy = new byte[size];
-		b.get(copy);
+	public byte[] toByteArray() throws IOException {
+		byte[] copy = new byte[payload.length];
+		System.arraycopy(payload, 0, copy, 0, payload.length);
 		return copy;
 	}
 
@@ -90,6 +79,7 @@ public final class DirectBocasValue extends LoadedBocasValue {
 	 */
 	@Override
 	public DirectBocasValue toDirect() {
-		return this;
+		return new DirectBocasValue(payload);
 	}
+
 }

@@ -16,7 +16,6 @@
 package net.derquinse.bocas;
 
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 
@@ -30,13 +29,13 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 /**
- * Abstract class for memory-based Bocas repositories.
+ * Abstract class for memory-based bocas bucket.
  * @author Andres Rodriguez.
  */
 @Beta
-abstract class AbstractMemoryBocas<V extends BocasValue> extends SkeletalBocasBackend {
+abstract class AbstractMemoryBocas extends SkeletalBocas {
 	/** Repository. */
-	private final ConcurrentMap<ByteString, V> repository = new MapMaker().makeMap();
+	private final ConcurrentMap<ByteString, LoadedBocasValue> bucket = new MapMaker().makeMap();
 
 	/** Constructor. */
 	AbstractMemoryBocas() {
@@ -48,7 +47,7 @@ abstract class AbstractMemoryBocas<V extends BocasValue> extends SkeletalBocasBa
 	 */
 	@Override
 	public final boolean contains(ByteString key) {
-		return repository.containsKey(key);
+		return bucket.containsKey(key);
 	}
 
 	/*
@@ -66,7 +65,7 @@ abstract class AbstractMemoryBocas<V extends BocasValue> extends SkeletalBocasBa
 		if (requested.isEmpty()) {
 			return ImmutableSet.of();
 		}
-		return Sets.intersection(requested, repository.keySet()).immutableCopy();
+		return Sets.intersection(requested, bucket.keySet()).immutableCopy();
 	}
 
 	/*
@@ -75,7 +74,7 @@ abstract class AbstractMemoryBocas<V extends BocasValue> extends SkeletalBocasBa
 	 */
 	@Override
 	public final Optional<BocasValue> get(ByteString key) {
-		BocasValue value = repository.get(key);
+		BocasValue value = bucket.get(key);
 		return Optional.fromNullable(value);
 	}
 
@@ -87,7 +86,7 @@ abstract class AbstractMemoryBocas<V extends BocasValue> extends SkeletalBocasBa
 	public final Map<ByteString, BocasValue> get(Iterable<ByteString> keys) {
 		Map<ByteString, BocasValue> map = Maps.newHashMap();
 		for (ByteString key : keys) {
-			BocasValue value = repository.get(key);
+			BocasValue value = bucket.get(key);
 			if (value != null) {
 				map.put(key, value);
 			}
@@ -95,26 +94,23 @@ abstract class AbstractMemoryBocas<V extends BocasValue> extends SkeletalBocasBa
 		return map;
 	}
 
-	/** Turns a loaded bocas value into a value of the correct type. */
-	abstract V toValue(LoadedBocasValue value);
-
 	/*
 	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.SkeletalBocasBackend#put(net.derquinse.bocas.LoadedBocasEntry)
+	 * @see net.derquinse.bocas.SkeletalBocas#put(net.derquinse.common.base.ByteString,
+	 * net.derquinse.bocas.LoadedBocasValue)
 	 */
 	@Override
-	protected final void put(LoadedBocasEntry entry) {
-		repository.putIfAbsent(entry.getKey(), toValue(entry.getValue()));
+	protected void put(ByteString key, LoadedBocasValue value) {
+		bucket.putIfAbsent(key, value);
 	}
 
 	/*
 	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.SkeletalBocasBackend#put(java.util.Map)
+	 * @see net.derquinse.bocas.SkeletalBocas#putAll(java.util.Map)
 	 */
 	@Override
-	protected final void put(Map<ByteString, LoadedBocasValue> entries) {
-		for (Entry<ByteString, LoadedBocasValue> entry : entries.entrySet()) {
-			repository.putIfAbsent(entry.getKey(), toValue(entry.getValue()));
-		}
+	protected void putAll(Map<ByteString, LoadedBocasValue> entries) {
+		bucket.putAll(entries);
 	}
+
 }

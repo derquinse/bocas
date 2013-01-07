@@ -16,10 +16,8 @@
 package net.derquinse.bocas.jersey.server;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static net.derquinse.bocas.jersey.BocasResources.czip2response;
 import static net.derquinse.bocas.jersey.BocasResources.iterable2String;
 import static net.derquinse.bocas.jersey.BocasResources.value2Output;
-import static net.derquinse.bocas.jersey.BocasResources.zip2response;
 
 import java.io.InputStream;
 import java.net.URI;
@@ -60,12 +58,12 @@ import com.sun.jersey.multipart.MultiPart;
 import com.sun.jersey.multipart.MultiPartMediaTypes;
 
 /**
- * Bocas repository JAX-RS resource. This class can be used as a sub-resource or subclassed to
- * become a root resource.
+ * Bocas bucket JAX-RS resource. This class can be used as a sub-resource or subclassed to become a
+ * root resource.
  * @author Andres Rodriguez.
  */
 public class BocasResource {
-	/** Repository. */
+	/** Target bucket. */
 	private final Bocas bocas;
 
 	private static WebApplicationException notFound() {
@@ -113,6 +111,13 @@ public class BocasResource {
 	 */
 	public BocasResource(Bocas bocas) {
 		this.bocas = checkNotNull(bocas, "The bocas repository must be provided");
+	}
+
+	/** Bucket existance. */
+	@GET
+	@Path("bucket")
+	public final Response get() {
+		return Response.ok().build();
 	}
 
 	/** @see Bocas#get(ByteString) */
@@ -219,49 +224,30 @@ public class BocasResource {
 		return containsObjects(setFromBody(keys));
 	}
 
-	/** @see Bocas#put(InputStream) */
+	/** @see Bocas#put(BocasValue) */
 	@POST
 	@Consumes(MediaType.APPLICATION_OCTET_STREAM)
 	@Produces(MediaType.TEXT_PLAIN)
 	public final Response putObject(InputStream stream) {
-		ByteString created = bocas.put(stream);
+		ByteString created = bocas.put(BocasValue.heap(stream));
 		String key = created.toHexString();
 		return Response.created(URI.create(key)).entity(key).build();
 	}
 
-	/** @see Bocas#putStreams(java.util.List) */
+	/** @see Bocas#putAll(Iterable) */
 	@POST
 	@Consumes(MultiPartMediaTypes.MULTIPART_MIXED)
 	@Produces(MediaType.TEXT_PLAIN)
 	public final Response putObjects(MultiPart entity) {
 		checkNotNull(entity);
-		List<InputStream> list = Lists.newLinkedList();
+		List<BocasValue> list = Lists.newLinkedList();
 		for (BodyPart part : entity.getBodyParts()) {
-			list.add(part.getEntityAs(InputStream.class));
+			list.add(BocasValue.heap(part.getEntityAs(InputStream.class)));
 		}
-		List<ByteString> created = bocas.putStreams(list);
+		List<ByteString> created = bocas.putAll(list);
 		if (created.isEmpty()) {
 			throw notFound();
 		}
 		return Response.status(Status.CREATED).entity(iterable2String(created)).build();
 	}
-
-	/** @see Bocas#putZip(InputStream) */
-	@POST
-	@Path(BocasResources.ZIP)
-	@Consumes(MediaType.APPLICATION_OCTET_STREAM)
-	@Produces(MediaType.TEXT_PLAIN)
-	public final Response putZip(InputStream stream) {
-		return Response.ok(zip2response(bocas.putZip(stream))).build();
-	}
-
-	/** @see Bocas#putZipAndGZip(InputStream) */
-	@POST
-	@Path(BocasResources.ZIPGZIP)
-	@Consumes(MediaType.APPLICATION_OCTET_STREAM)
-	@Produces(MediaType.TEXT_PLAIN)
-	public final Response putZipAndGZip(InputStream stream) {
-		return Response.ok(czip2response(bocas.putZipAndGZip(stream))).build();
-	}
-
 }

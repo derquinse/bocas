@@ -15,25 +15,35 @@
  */
 package net.derquinse.bocas;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import java.util.concurrent.TimeUnit;
 
-import net.derquinse.common.base.ByteString;
-
-import com.google.common.annotations.Beta;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.Weigher;
 
 /**
- * Builder for caching Bocas repositories.
+ * Builder for caching bocas repositories based on Guava.
  * @author Andres Rodriguez.
  */
-@Beta
-public final class CachingBocasBuilder {
+public final class GuavaCachingBocasBuilder {
+	/** Whether the service has already been built. */
+	private boolean built = false;
+	/** Whether the cache is direct. */
+	private boolean direct = false;
+	/** Whether the cache is shared among the available buckets. */
+	private boolean shared = false;
+	/** Whether writes are always performed. */
+	private Boolean alwaysWrite = null;
 	/** Internal builder. */
 	private final CacheBuilder<Object, Object> builder = CacheBuilder.newBuilder().recordStats();
 
 	/** Constructor. */
-	CachingBocasBuilder() {
+	GuavaCachingBocasBuilder() {
+	}
+
+	private void checkNotBuilt() {
+		checkState(!built, "The service has already been built");
 	}
 
 	/**
@@ -45,8 +55,10 @@ public final class CachingBocasBuilder {
 	 * @param size the maximum size of the cache
 	 * @throws IllegalArgumentException if {@code size} is negative
 	 * @throws IllegalStateException if a maximum size was already set
+	 * @throws IllegalStateException if the service has already been built
 	 */
-	public CachingBocasBuilder maximumSize(long size) {
+	public GuavaCachingBocasBuilder maximumSize(long size) {
+		checkNotBuilt();
 		builder.maximumSize(size);
 		return this;
 	}
@@ -65,8 +77,10 @@ public final class CachingBocasBuilder {
 	 * @param weight the maximum weight the cache may contain
 	 * @throws IllegalArgumentException if {@code size} is negative
 	 * @throws IllegalStateException if a maximum size was already set
+	 * @throws IllegalStateException if the service has already been built
 	 */
-	public CachingBocasBuilder maximumWeight(long weight) {
+	public GuavaCachingBocasBuilder maximumWeight(long weight) {
+		checkNotBuilt();
 		builder.maximumWeight(weight).weigher(EntryWeigher.INSTANCE);
 		return this;
 	}
@@ -84,36 +98,70 @@ public final class CachingBocasBuilder {
 	 * @param unit the unit that {@code duration} is expressed in
 	 * @throws IllegalArgumentException if {@code duration} is negative
 	 * @throws IllegalStateException if the time to idle or time to live was already set
+	 * @throws IllegalStateException if the service has already been built
 	 */
-	public CachingBocasBuilder expireAfterAccess(long duration, TimeUnit unit) {
+	public GuavaCachingBocasBuilder expireAfterAccess(long duration, TimeUnit unit) {
+		checkNotBuilt();
 		builder.expireAfterAccess(duration, unit);
 		return this;
 	}
 
 	/**
-	 * Builds a cache. Soft values are used.
-	 * @param bocas Repository to cache.
-	 * @return The caching repository.
+	 * Specifies the cache will use direct values.
+	 * @throws IllegalStateException if the service has already been built
 	 */
-	public CachingBocas build(Bocas bocas) {
-		return new GuavaCachingBocas(builder.softValues(), bocas);
+	public GuavaCachingBocasBuilder direct() {
+		checkNotBuilt();
+		this.direct = true;
+		return this;
 	}
 
 	/**
-	 * Builds a cache based on direct buffers.
-	 * @param bocas Repository to cache.
-	 * @return The caching repository.
+	 * Specifies if the cached values will be shared among the available buckets.
+	 * @throws IllegalStateException if the service has already been built
 	 */
-	public CachingBocas buildDirect(Bocas bocas) {
-		return new DirectGuavaCachingBocas(builder, bocas);
+	public GuavaCachingBocasBuilder shared() {
+		checkNotBuilt();
+		this.shared = true;
+		return this;
 	}
 
-	private enum EntryWeigher implements Weigher<ByteString, BocasValue> {
+	/**
+	 * Specifies whether writes are always propagated to the source service. For shared caches the
+	 * default value is true, otherwise is false.
+	 * @throws IllegalStateException if the value has already been set
+	 * @throws IllegalStateException if the service has already been built
+	 */
+	public GuavaCachingBocasBuilder alwaysWrite(boolean alwaysWrite) {
+		checkNotBuilt();
+		checkState(this.alwaysWrite == null, "The alwaysWrite flag has already been set");
+		this.alwaysWrite = alwaysWrite;
+		return this;
+	}
+
+	/**
+	 * Builds a cache.
+	 * @param service Repository to cache.
+	 * @return The caching repository.
+	 */
+	public CachingBocasService build(BocasService service) {
+		checkNotBuilt();
+		built = true;
+		final boolean write = alwaysWrite != null ? alwaysWrite.booleanValue() : shared;
+		if (shared) {
+			return new SharedGuavaCachingBocasService(service, builder, direct, write);
+		} else {
+			return new BucketGuavaCachingBocasService(service, builder, direct, write);
+		}
+	}
+
+	private enum EntryWeigher implements Weigher<Object, BocasValue> {
 		INSTANCE;
 
 		@Override
-		public int weigh(ByteString key, BocasValue value) {
-			return value.getSize();
+		public int weigh(Object key, BocasValue value) {
+			Integer size = value.getSize();
+			return size != null ? size.intValue() : 8192;
 		}
 	}
 

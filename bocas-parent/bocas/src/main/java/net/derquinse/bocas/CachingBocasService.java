@@ -15,16 +15,14 @@
  */
 package net.derquinse.bocas;
 
-import com.google.common.annotations.Beta;
 import com.google.common.cache.CacheStats;
 
 /**
- * Interface for a caching Bocas repository. Even though the statistics are based on Guava's
+ * Interface for a caching bocas repository. Even though the statistics are based on Guava's
  * {@link CacheStats} objects implementations are not required to use Guava's caches.
  * @author Andres Rodriguez.
  */
-@Beta
-public interface CachingBocas extends Bocas {
+public interface CachingBocasService extends BocasService {
 	/**
 	 * Returns the cache statistics.
 	 * @return A current snapshot of the recorded statistics or an empty object if no statistics are

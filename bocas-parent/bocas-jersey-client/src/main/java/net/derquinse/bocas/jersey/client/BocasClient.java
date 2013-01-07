@@ -31,7 +31,6 @@ import net.derquinse.bocas.BocasException;
 import net.derquinse.bocas.BocasValue;
 import net.derquinse.bocas.jersey.BocasResources;
 import net.derquinse.common.base.ByteString;
-import net.derquinse.common.util.zip.MaybeCompressed;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
@@ -50,23 +49,23 @@ import com.sun.jersey.multipart.MultiPart;
 import com.sun.jersey.multipart.MultiPartMediaTypes;
 
 /**
- * Bocas repository client based on Jersey (JAX-RS).
+ * Bocas bucket client based on Jersey (JAX-RS).
  * @author Andres Rodriguez.
  */
 final class BocasClient implements Bocas {
-	/** Root resource. */
+	/** Bucket resource. */
 	private final WebResource resource;
 
 	private static ByteString checkKey(ByteString key) {
 		return checkNotNull(key, "The object key must be provided");
 	}
 
-	private static <T> T checkObject(T object) {
-		return checkNotNull(object, "The object to put must be provided");
+	private static <T> T checkValue(T value) {
+		return checkNotNull(value, "The value to put must be provided");
 	}
 
-	private static <T> T checkObjects(T objects) {
-		return checkNotNull(objects, "The objects to put must be provided");
+	private static <T> T checkValues(T values) {
+		return checkNotNull(values, "The values to put must be provided");
 	}
 
 	private static BocasException exception(Throwable t) {
@@ -79,7 +78,7 @@ final class BocasClient implements Bocas {
 	}
 
 	BocasClient(WebResource resource) {
-		this.resource = checkNotNull(resource, "The root resource must be provided");
+		this.resource = checkNotNull(resource, "The bucket resource must be provided");
 	}
 
 	private WebResource object(ByteString key) {
@@ -199,25 +198,12 @@ final class BocasClient implements Bocas {
 
 	/*
 	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#put(com.google.common.io.InputSupplier)
+	 * @see net.derquinse.bocas.Bocas#put(net.derquinse.bocas.BocasValue)
 	 */
 	@Override
-	public ByteString put(InputSupplier<? extends InputStream> object) {
+	public ByteString put(BocasValue value) {
 		try {
-			return put(ByteStreams.toByteArray(checkObject(object)));
-		} catch (IOException e) {
-			throw exception(e);
-		}
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#put(java.io.InputStream)
-	 */
-	@Override
-	public ByteString put(InputStream object) {
-		try {
-			return put(ByteStreams.toByteArray(checkObject(object)));
+			return put(ByteStreams.toByteArray(checkValue(value)));
 		} catch (IOException e) {
 			throw exception(e);
 		}
@@ -236,110 +222,16 @@ final class BocasClient implements Bocas {
 		}
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#putSuppliers(java.util.List)
-	 */
 	@Override
-	public List<ByteString> putSuppliers(List<? extends InputSupplier<? extends InputStream>> objects) {
-		checkObjects(objects);
+	public List<ByteString> putAll(Iterable<? extends BocasValue> values) {
+		checkValues(values);
 		try {
-			List<byte[]> arrays = Lists.newArrayListWithExpectedSize(objects.size());
-			for (InputSupplier<? extends InputStream> object : objects) {
-				arrays.add(ByteStreams.toByteArray(checkObject(object)));
+			List<byte[]> arrays = Lists.newLinkedList();
+			for (InputSupplier<? extends InputStream> value : values) {
+				arrays.add(ByteStreams.toByteArray(checkValue(value)));
 			}
 			return put(arrays);
 		} catch (IOException e) {
-			throw exception(e);
-		}
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#putStreams(java.util.List)
-	 */
-	@Override
-	public List<ByteString> putStreams(List<? extends InputStream> objects) {
-		checkObjects(objects);
-		try {
-			List<byte[]> arrays = Lists.newArrayListWithExpectedSize(objects.size());
-			for (InputStream object : objects) {
-				arrays.add(ByteStreams.toByteArray(checkObject(object)));
-			}
-			return put(arrays);
-		} catch (IOException e) {
-			throw exception(e);
-		}
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#putZip(java.io.InputStream)
-	 */
-	@Override
-	public Map<String, ByteString> putZip(InputStream object) {
-		try {
-			return putZip(ByteStreams.toByteArray(checkObject(object)));
-		} catch (IOException e) {
-			throw exception(e);
-		}
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#putZip(com.google.common.io.InputSupplier)
-	 */
-	@Override
-	public Map<String, ByteString> putZip(InputSupplier<? extends InputStream> object) {
-		try {
-			return putZip(ByteStreams.toByteArray(checkObject(object)));
-		} catch (IOException e) {
-			throw exception(e);
-		}
-	}
-
-	private Map<String, ByteString> putZip(byte[] object) {
-		try {
-			String response = resource.path(BocasResources.ZIP).entity(object, MediaType.APPLICATION_OCTET_STREAM_TYPE)
-					.post(String.class);
-			return BocasResources.response2zip(response);
-		} catch (UniformInterfaceException e) {
-			throw exception(e);
-		}
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#putZipAndGZip(java.io.InputStream)
-	 */
-	@Override
-	public Map<String, MaybeCompressed<ByteString>> putZipAndGZip(InputStream object) {
-		try {
-			return putZipAndGZip(ByteStreams.toByteArray(checkObject(object)));
-		} catch (IOException e) {
-			throw exception(e);
-		}
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#putZipAndGZip(com.google.common.io.InputSupplier)
-	 */
-	@Override
-	public Map<String, MaybeCompressed<ByteString>> putZipAndGZip(InputSupplier<? extends InputStream> object) {
-		try {
-			return putZipAndGZip(ByteStreams.toByteArray(checkObject(object)));
-		} catch (IOException e) {
-			throw exception(e);
-		}
-	}
-
-	private Map<String, MaybeCompressed<ByteString>> putZipAndGZip(byte[] object) {
-		try {
-			String response = resource.path(BocasResources.ZIPGZIP).entity(object, MediaType.APPLICATION_OCTET_STREAM_TYPE)
-					.post(String.class);
-			return BocasResources.response2czip(response);
-		} catch (UniformInterfaceException e) {
 			throw exception(e);
 		}
 	}

@@ -22,7 +22,7 @@ import javax.ws.rs.Path;
  * @author Andres Rodriguez
  */
 @Path("/")
-public class TestBocasResource extends BocasResource {
+public class TestBocasResource extends BocasServiceResource {
 	public TestBocasResource() {
 		super(BocasJerseyTest.SERVER);
 	}

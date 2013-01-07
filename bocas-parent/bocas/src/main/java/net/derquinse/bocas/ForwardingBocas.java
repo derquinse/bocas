@@ -15,21 +15,18 @@
  */
 package net.derquinse.bocas;
 
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import net.derquinse.common.base.ByteString;
-import net.derquinse.common.util.zip.MaybeCompressed;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Optional;
 import com.google.common.collect.ForwardingObject;
-import com.google.common.io.InputSupplier;
 
 /**
- * A Bocas repository that forwards all its method calls to another.
+ * A bocas bucket that forwards all its method calls to another.
  * @author Andres Rodriguez.
  */
 @Beta
@@ -80,74 +77,19 @@ public abstract class ForwardingBocas extends ForwardingObject implements Bocas 
 
 	/*
 	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#put(com.google.common.io.InputSupplier)
+	 * @see net.derquinse.bocas.Bocas#put(net.derquinse.bocas.BocasValue)
 	 */
 	@Override
-	public ByteString put(InputSupplier<? extends InputStream> object) {
-		return delegate().put(object);
+	public ByteString put(BocasValue value) {
+		return delegate().put(value);
 	}
 
 	/*
 	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#put(java.io.InputStream)
+	 * @see net.derquinse.bocas.Bocas#putAll(java.lang.Iterable)
 	 */
 	@Override
-	public ByteString put(InputStream object) {
-		return delegate().put(object);
+	public List<ByteString> putAll(Iterable<? extends BocasValue> values) {
+		return delegate().putAll(values);
 	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#putAll(java.util.List)
-	 */
-	@Override
-	public List<ByteString> putSuppliers(List<? extends InputSupplier<? extends InputStream>> objects) {
-		return delegate().putSuppliers(objects);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#putStreams(java.util.List)
-	 */
-	@Override
-	public List<ByteString> putStreams(List<? extends InputStream> objects) {
-		return delegate().putStreams(objects);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#putZip(java.io.InputStream)
-	 */
-	@Override
-	public Map<String, ByteString> putZip(InputStream object) {
-		return delegate().putZip(object);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#putZip(com.google.common.io.InputSupplier)
-	 */
-	@Override
-	public Map<String, ByteString> putZip(InputSupplier<? extends InputStream> object) {
-		return delegate().putZip(object);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#putZipAndGZip(java.io.InputStream)
-	 */
-	@Override
-	public Map<String, MaybeCompressed<ByteString>> putZipAndGZip(InputStream object) {
-		return delegate().putZipAndGZip(object);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#putZipAndGZip(com.google.common.io.InputSupplier)
-	 */
-	@Override
-	public Map<String, MaybeCompressed<ByteString>> putZipAndGZip(InputSupplier<? extends InputStream> object) {
-		return delegate().putZipAndGZip(object);
-	}
-
 }

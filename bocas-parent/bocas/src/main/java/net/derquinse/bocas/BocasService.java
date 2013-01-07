@@ -18,34 +18,16 @@ package net.derquinse.bocas;
 import com.google.common.annotations.Beta;
 
 /**
- * A Bocas repository value loaded into a direct byte buffer.
+ * Interface for a bocas repository. A Bocas repository consists on a set of buckets, identified by
+ * a unique string. Whether the entries are shared among buckets or not is up to the implementation.
  * @author Andres Rodriguez.
  */
 @Beta
-public final class DirectBocasEntry extends BocasEntry {
-	/** Payload. */
-	private final DirectBocasValue value;
-
-	DirectBocasEntry(DirectBocasValue value) {
-		super(value);
-		this.value = value;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.BocasEntry#getValue()
+public interface BocasService {
+	/**
+	 * Returns the bucket with the requested name.
+	 * @throws NullPointerException if the argument is {@code null}.
+	 * @thorows IllegalArgumentException if there is no bucket with the provided name.
 	 */
-	@Override
-	public DirectBocasValue getValue() {
-		return value;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.BocasEntry#direct()
-	 */
-	@Override
-	public DirectBocasEntry direct() {
-		return this;
-	}
+	Bocas getBucket(String name);
 }

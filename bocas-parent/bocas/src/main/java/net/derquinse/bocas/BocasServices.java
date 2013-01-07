@@ -18,36 +18,55 @@ package net.derquinse.bocas;
 import net.derquinse.common.base.NotInstantiable;
 
 import com.google.common.annotations.Beta;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 
 /**
- * Factory class for Bocas services and repositories.
+ * Factory class for bocas repositories and buckets.
  */
 @Beta
 public final class BocasServices extends NotInstantiable {
 	private BocasServices() {
 	}
 
-	/** Creates a new heap-based repository. */
-	public static Bocas memory() {
+	/** Creates a new heap-based bucket. */
+	public static Bocas memoryBucket() {
 		return new MemoryBocas();
 	}
 
-	/** Creates a new memory-based repository based on direct buffers. */
-	public static Bocas direct() {
+	/** Creates a new memory-based bucket based on direct buffers. */
+	public static Bocas directBucket() {
 		return new DirectMemoryBocas();
 	}
 
 	/** Creates a new caching repository builder. */
-	public static CachingBocasBuilder cache() {
-		return new CachingBocasBuilder();
+	public static GuavaCachingBocasBuilder cache() {
+		return new GuavaCachingBocasBuilder();
 	}
 
 	/**
-	 * Creates a new bocas repository that fetches entries missing in the primary repository from the
-	 * provided seed. Writes are not propagated to the seed.
+	 * Creates a new bocas bucket that fetches entries missing in the primary bucket from the provided
+	 * seed. Writes are not propagated to the seed.
 	 */
 	public static Bocas seeded(Bocas primary, Bocas seed) {
 		return new SeededBocas(primary, seed);
+	}
+
+	/**
+	 * Creates a new service that shares a single bucket among several names.
+	 * @param bucket Bucket to share.
+	 * @param validName Valid names.
+	 */
+	public static BocasService shared(Bocas bucket, Predicate<String> validName) {
+		return new SharedBocasService(bucket, validName);
+	}
+
+	/**
+	 * Creates a new service that shares a single bucket for every possible bucket name..
+	 * @param bucket Bucket to share.
+	 */
+	public static BocasService shared(Bocas bucket) {
+		return shared(bucket, Predicates.<String> alwaysTrue());
 	}
 
 }
