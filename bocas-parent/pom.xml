@@ -3,7 +3,7 @@
 	<parent>
 		<artifactId>derquinse-common-project-parent</artifactId>
 		<groupId>net.derquinse</groupId>
-		<version>1.0.26</version>
+		<version>1.0.27</version>
 	</parent>
 	<groupId>net.derquinse.bocas</groupId>
 	<artifactId>bocas-parent</artifactId>
@@ -45,7 +45,9 @@
 	<dependencies>
 		<dependency>
 			<groupId>net.derquinse</groupId>
-			<artifactId>derquinse-common-test-support</artifactId>
+			<artifactId>derquinse-common-base</artifactId>
+			<type>test-jar</type>
+			<scope>test</scope>
 		</dependency>
 	</dependencies>
 	<modules>
