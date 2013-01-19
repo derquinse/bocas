@@ -93,6 +93,7 @@ final class DefaultJEBocas extends SkeletalBocas {
 	}
 
 	/** Closes the database. */
+	@Override
 	@PreDestroy
 	public void close() {
 		lock.writeLock().lock();

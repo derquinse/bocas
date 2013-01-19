@@ -41,6 +41,15 @@ public abstract class ForwardingBocas extends ForwardingObject implements Bocas 
 
 	/*
 	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.Bocas#close()
+	 */
+	@Override
+	public void close() {
+		delegate().close();
+	}
+
+	/*
+	 * (non-Javadoc)
 	 * @see net.derquinse.bocas.Bocas#contains(net.derquinse.common.base.ByteString)
 	 */
 	@Override

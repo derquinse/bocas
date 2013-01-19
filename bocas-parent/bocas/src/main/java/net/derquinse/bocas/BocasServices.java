@@ -46,7 +46,7 @@ public final class BocasServices extends NotInstantiable {
 
 	/**
 	 * Creates a new bocas bucket that fetches entries missing in the primary bucket from the provided
-	 * seed. Writes are not propagated to the seed.
+	 * seed. Writes are not propagated to the seed. Closing is a no-op.
 	 */
 	public static Bocas seeded(Bocas primary, Bocas seed) {
 		return new SeededBocas(primary, seed);

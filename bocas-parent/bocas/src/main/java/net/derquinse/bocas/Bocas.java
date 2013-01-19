@@ -32,6 +32,13 @@ import com.google.common.base.Optional;
 @Beta
 public interface Bocas {
 	/**
+	 * Closes the bucket so it cannot be used again. Optional operation, buckets that do not need to
+	 * be closed ignore this operation. Any operation other than close should throw
+	 * {@link IllegalStateException}. Calling close in a closed bucket is a no-op.
+	 */
+	void close();
+
+	/**
 	 * Returns whether the repository contains the provided key.
 	 * @throws BocasException if an error occurs.
 	 */

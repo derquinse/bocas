@@ -32,6 +32,7 @@ import com.google.common.collect.Sets;
 
 /**
  * A Bocas transformer that fetches entries missing in the primary repository from the provided seed.
+ * Closing is a no-op.
  * @author Andres Rodriguez.
  */
 @Beta
@@ -62,6 +63,15 @@ final class SeededBocas extends ForwardingBocas {
 			requested = Sets.newHashSet(keys);
 		}
 		return requested;
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.ForwardingBocas#close()
+	 */
+	@Override
+	public void close() {
+		// nothing
 	}
 
 	/*

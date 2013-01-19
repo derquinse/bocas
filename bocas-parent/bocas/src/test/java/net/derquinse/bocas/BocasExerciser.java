@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import net.derquinse.common.base.ByteString;
 import net.derquinse.common.test.RandomSupport;
@@ -38,11 +39,15 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.InputSupplier;
+import com.google.common.primitives.Longs;
 
 /**
  * Bocas bucket exerciser.
  */
 public final class BocasExerciser {
+	/** New data index. */
+	private static final AtomicLong INDEX = new AtomicLong(0L);
+
 	/** Repository. */
 	private final Bocas bocas;
 	/** Error flag. */
@@ -51,7 +56,11 @@ public final class BocasExerciser {
 	private final int tasks;
 
 	public static LoadedBocasValue data() {
+		byte[] deterministic = Longs.toByteArray(INDEX.incrementAndGet());
 		byte[] data = RandomSupport.getBytes(RandomSupport.nextInt(1024, 10240));
+		for (int i = 0; i < deterministic.length; i++) {
+			data[i] = deterministic[i];
+		}
 		return BocasValue.of(data);
 	}
 
@@ -59,13 +68,13 @@ public final class BocasExerciser {
 		assertEquals(ByteStreams.toByteArray(data), ByteStreams.toByteArray(value));
 	}
 
-	/** Exercise a Bocas repository. */
+	/** Exercises a Bocas repository. */
 	public static void exercise(Bocas bocas, int tasks) throws Exception {
 		BocasExerciser e = new BocasExerciser(bocas, tasks);
 		e.run();
 	}
 
-	/** Exercise a Bocas repository. */
+	/** Exercises a Bocas repository. */
 	public static void exercise(Bocas bocas) throws Exception {
 		exercise(bocas, 1000);
 	}
@@ -146,25 +155,19 @@ public final class BocasExerciser {
 		assertTrue(bocas.get(ImmutableSet.of(k)).isEmpty());
 	}
 
-	private LoadedBocasValue create() throws Exception {
-		LoadedBocasValue value = data();
-		checkNotInRepository(value);
-		return value;
-	}
-
 	/** Exercise the repository. */
 	private void run() throws Exception {
-		LoadedBocasValue data1 = create();
+		LoadedBocasValue data1 = data();
 		ByteString k1 = data1.key();
 		put(data1);
-		LoadedBocasValue data2 = create();
+		LoadedBocasValue data2 = data();
 		ByteString k2 = data2.key();
-		LoadedBocasValue data3 = create();
+		LoadedBocasValue data3 = data();
 		ByteString k3 = data3.key();
 		put(data2);
 		checkInRepository(data1);
 		checkNotInRepository(data3);
-		LoadedBocasValue data4 = create();
+		LoadedBocasValue data4 = data();
 		ByteString k4 = data4.key();
 		List<ByteString> list = ImmutableList.of(k1, k2, k3, k4, k1);
 		assertEquals(bocas.contained(list).size(), 2);
@@ -183,7 +186,7 @@ public final class BocasExerciser {
 		List<ByteString> keyList = Lists.newLinkedList();
 		List<BocasValue> valueList = Lists.newLinkedList();
 		for (int i = 0; i < 15; i++) {
-			LoadedBocasValue e = create();
+			LoadedBocasValue e = data();
 			keyList.add(e.key());
 			valueList.add(e);
 		}
@@ -192,7 +195,7 @@ public final class BocasExerciser {
 		assertTrue(bocas.get(keyList).keySet().containsAll(keyList));
 		// Multiple operation - Phase II
 		for (int i = 0; i < 15; i++) {
-			LoadedBocasValue e = create();
+			LoadedBocasValue e = data();
 			keyList.add(e.key());
 			valueList.add(e);
 		}
@@ -224,7 +227,7 @@ public final class BocasExerciser {
 		@Override
 		public void run() {
 			try {
-				put(create());
+				put(data());
 			} catch (Exception e) {
 				ok = false;
 				throw new RuntimeException(e);

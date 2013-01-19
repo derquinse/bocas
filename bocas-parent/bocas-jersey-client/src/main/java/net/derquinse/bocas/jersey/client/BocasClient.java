@@ -87,6 +87,15 @@ final class BocasClient implements Bocas {
 
 	/*
 	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.Bocas#close()
+	 */
+	@Override
+	public void close() {
+		// Nothing to do.
+	}
+
+	/*
+	 * (non-Javadoc)
 	 * @see net.derquinse.bocas.Bocas#contains(net.derquinse.common.base.ByteString)
 	 */
 	@Override
