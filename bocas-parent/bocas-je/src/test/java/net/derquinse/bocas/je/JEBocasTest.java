@@ -18,8 +18,6 @@ package net.derquinse.bocas.je;
 import net.derquinse.bocas.Bocas;
 import net.derquinse.bocas.BocasExerciser;
 
-import org.testng.annotations.Test;
-
 import com.google.common.io.Files;
 
 /**
@@ -30,9 +28,14 @@ public class JEBocasTest {
 	public JEBocasTest() {
 	}
 
-	@Test
+	// @Test
 	public void basic() throws Exception {
 		Bocas bocas = JEBocas.basic(Files.createTempDir().getAbsolutePath());
+		try {
+			BocasExerciser.exercise(bocas);
+		} finally {
+			((DefaultJEBocas) bocas).close();
+		}
 		BocasExerciser.exercise(bocas);
 	}
 }

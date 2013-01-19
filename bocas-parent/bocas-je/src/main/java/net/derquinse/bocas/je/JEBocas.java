@@ -39,11 +39,12 @@ public final class JEBocas extends NotInstantiable {
 	/**
 	 * Creates a new bucket based on a basic environment in the provided directory.
 	 * @param directory Database environment directory. It must be an existing directory.
+	 * @param fileSize Optional parameter specifying log file maximum size (in bytes).
 	 * @return The created service.
 	 * @throws IllegalArgumentException if the argument is not an existing directory.
 	 * @throws BocasException if unable to create the environment or database.
 	 */
-	public static Bocas basic(String directory) {
+	public static Bocas basic(String directory, Long fileSize) {
 		checkNotNull(directory, "The environment directory must be provided");
 		File d = new File(directory);
 		checkArgument(d.exists(), "The directory [%s] does not exist");
@@ -52,11 +53,25 @@ public final class JEBocas extends NotInstantiable {
 		ec.setAllowCreate(true);
 		ec.setReadOnly(false);
 		ec.setTransactional(true);
+		if (fileSize != null) {
+			ec.setConfigParam(EnvironmentConfig.LOG_FILE_MAX, fileSize.toString());
+		}
 		try {
 			Environment e = new Environment(d, ec);
 			return new DefaultJEBocas(e);
 		} catch (DatabaseException e) {
 			throw new BocasException(e);
 		}
+	}
+
+	/**
+	 * Creates a new bucket based on a basic environment in the provided directory.
+	 * @param directory Database environment directory. It must be an existing directory.
+	 * @return The created service.
+	 * @throws IllegalArgumentException if the argument is not an existing directory.
+	 * @throws BocasException if unable to create the environment or database.
+	 */
+	public static Bocas basic(String directory) {
+		return basic(directory, null);
 	}
 }

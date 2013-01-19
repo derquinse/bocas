@@ -103,12 +103,12 @@ final class DefaultJEBocas extends SkeletalBocas {
 			try {
 				database.close();
 			} catch (Exception e) {
-				// TODO: log
+				e.printStackTrace();
 			}
 			try {
 				environment.close();
 			} catch (Exception e) {
-				// TODO: log
+				e.printStackTrace();
 			}
 		} finally {
 			lock.writeLock().unlock();
