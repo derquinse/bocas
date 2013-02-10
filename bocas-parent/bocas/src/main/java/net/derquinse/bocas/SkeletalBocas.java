@@ -66,7 +66,9 @@ public abstract class SkeletalBocas implements Bocas {
 			keys.add(key);
 			entries.put(key, loaded);
 		}
-		putAll(entries);
+		if (!entries.isEmpty()) {
+			putAll(entries);
+		}
 		return keys.build();
 	}
 

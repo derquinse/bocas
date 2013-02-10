@@ -37,6 +37,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.InputSupplier;
 import com.google.common.primitives.Longs;
@@ -62,6 +63,15 @@ public final class BocasExerciser {
 			data[i] = deterministic[i];
 		}
 		return BocasValue.of(data);
+	}
+
+	public static Map<ByteString, LoadedBocasValue> dataSet(int size) {
+		Map<ByteString, LoadedBocasValue> map = Maps.newHashMapWithExpectedSize(size);
+		for (int i = 0; i < size; i++) {
+			LoadedBocasValue v = data();
+			map.put(v.key(), v);
+		}
+		return map;
 	}
 
 	public static void check(LoadedBocasValue value, InputSupplier<? extends InputStream> data) throws IOException {

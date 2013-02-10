@@ -79,4 +79,26 @@ public final class BocasServices extends NotInstantiable {
 		return shared(bucket, Predicates.<String> alwaysTrue());
 	}
 
+	/**
+	 * Creates a new bocas bucket that synchronously replicates writes to the primary bucket into a
+	 * replica. Closing both buckets is the responsibility of the caller.
+	 * @param primary Primary bucket.
+	 * @param replica Replica bucket.
+	 * @param check Whether to check for existing entries before writing.
+	 */
+	public static Bocas syncReplica(Bocas primary, Bocas replica, boolean check) {
+		return new SyncReplicatedBocas(primary, replica, check);
+	}
+
+	/**
+	 * Creates a new bocas service that synchronously replicates writes to the primary service buckets
+	 * into the replica buckets. Bucket closing is the responsibility of the caller.
+	 * @param primary Primary service.
+	 * @param replica Replica service.
+	 * @param check Whether to check for existing entries before writing.
+	 */
+	public static BocasService syncReplica(BocasService primary, BocasService replica, boolean check) {
+		return decorate(primary, new SyncReplicatedBocasDecorator(replica, check));
+	}
+
 }
