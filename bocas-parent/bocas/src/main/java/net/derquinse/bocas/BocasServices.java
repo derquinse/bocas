@@ -45,6 +45,16 @@ public final class BocasServices extends NotInstantiable {
 	}
 
 	/**
+	 * Decorates an existing service. Bucket closing (both source and decorated) are the callers
+	 * responsibility.
+	 * @param service Service to decorate.
+	 * @param decorator Bucket decorator.
+	 */
+	public static BocasService decorate(BocasService service, BocasDecorator decorator) {
+		return new BocasServiceDecorator(service, decorator);
+	}
+
+	/**
 	 * Creates a new bocas bucket that fetches entries missing in the primary bucket from the provided
 	 * seed. Writes are not propagated to the seed. Closing is a no-op.
 	 */

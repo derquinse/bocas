@@ -15,19 +15,11 @@
  */
 package net.derquinse.bocas;
 
-import com.google.common.annotations.Beta;
-
 /**
- * Interface for a bocas service. A Bocas service consists on a set of buckets, identified by
- * a unique string. Whether the entries are shared among buckets or not is up to the implementation.
+ * Interface for a bocas bucket decorator.
  * @author Andres Rodriguez.
  */
-@Beta
-public interface BocasService {
-	/**
-	 * Returns the bucket with the requested name.
-	 * @throws NullPointerException if the argument is {@code null}.
-	 * @throws IllegalArgumentException if there is no bucket with the provided name.
-	 */
-	Bocas getBucket(String name);
+public interface BocasDecorator {
+	/** Decorates a bucket. */
+	Bocas decorate(String name, Bocas bocas);
 }

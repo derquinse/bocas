@@ -20,16 +20,13 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import net.derquinse.common.base.ByteString;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Sets;
 import com.google.common.io.ByteStreams;
 import com.google.common.io.InputSupplier;
 
@@ -236,14 +233,13 @@ public abstract class BocasValue implements InputSupplier<InputStream> {
 	}
 
 	/**
-	 * Turn a collection of payloads into a list of entries. The iteration order of the list is the same
-	 * as the input argument.
+	 * Turn a collection of payloads into a list of entries. The iteration order of the list is the
+	 * same as the input argument.
 	 * @throws BocasException if unable to load any of the payloads.
 	 */
 	public static ImmutableList<Entry<ByteString, LoadedBocasValue>> entryList(
 			Iterable<? extends InputSupplier<? extends InputStream>> payloads) {
 		ImmutableList.Builder<Entry<ByteString, LoadedBocasValue>> b = ImmutableList.builder();
-		Set<ByteString> visited = Sets.newHashSet();
 		for (InputSupplier<? extends InputStream> payload : payloads) {
 			b.add(loaded(payload).toEntry());
 		}
