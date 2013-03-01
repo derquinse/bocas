@@ -3,7 +3,7 @@
 	<parent>
 		<artifactId>derquinse-common-project-parent</artifactId>
 		<groupId>net.derquinse</groupId>
-		<version>1.0.28</version>
+		<version>1.0.29</version>
 	</parent>
 	<groupId>net.derquinse.bocas</groupId>
 	<artifactId>bocas-parent</artifactId>
