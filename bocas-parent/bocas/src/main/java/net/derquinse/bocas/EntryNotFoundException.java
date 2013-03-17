@@ -15,22 +15,12 @@
  */
 package net.derquinse.bocas;
 
-import net.derquinse.common.base.ByteString;
-
-import com.google.common.cache.CacheBuilder;
-
 /**
- * Guava-cache-based bocas caching repositories that shares the cache among every available bucket.
+ * Exception thrown when an entry is not found in a cache.
  * @author Andres Rodriguez.
  */
-final class SharedGuavaCachingBocasService extends AbstractGuavaCachingBocasService<ByteString> {
-	/** Constructor. */
-	SharedGuavaCachingBocasService(BocasService service, CacheBuilder<Object, Object> builder, boolean direct,
-			boolean alwaysWrite) {
-		super(service, builder, direct, alwaysWrite);
-	}
-
-	SharedGuavaCachingBocas createBucket(Bocas source) {
-		return new SharedGuavaCachingBocas(source, getCache(), isDirect(), isAlwaysWrite());
+@SuppressWarnings("serial")
+final class EntryNotFoundException extends RuntimeException {
+	EntryNotFoundException() {
 	}
 }
