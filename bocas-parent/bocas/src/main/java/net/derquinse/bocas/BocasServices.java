@@ -45,7 +45,7 @@ public final class BocasServices extends NotInstantiable {
 	}
 
 	/**
-	 * Decorates an existing service. Bucket closing (both source and decorated) are the callers
+	 * Decorates an existing service. Bucket closing (both source and decorated) is the caller's
 	 * responsibility.
 	 * @param service Service to decorate.
 	 * @param decorator Bucket decorator.
@@ -99,6 +99,13 @@ public final class BocasServices extends NotInstantiable {
 	 */
 	public static BocasService syncReplica(BocasService primary, BocasService replica, boolean check) {
 		return decorate(primary, new SyncReplicatedBocasDecorator(replica, check));
+	}
+
+	/**
+	 * Creates a new builder for a cache shared among multiple services.
+	 */
+	public static MultiServiceGuavaCacheBuilder multiServiceCache() {
+		return new MultiServiceGuavaCacheBuilder();
 	}
 
 }

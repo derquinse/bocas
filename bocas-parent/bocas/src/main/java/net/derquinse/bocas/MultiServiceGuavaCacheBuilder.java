@@ -19,26 +19,25 @@ import static com.google.common.base.Preconditions.checkState;
 
 import java.util.concurrent.TimeUnit;
 
+import net.derquinse.common.base.ByteString;
+
+import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 
 /**
- * Builder for caching bocas repositories based on Guava.
+ * Builder for a Guava-based cache for multiple services.
  * @author Andres Rodriguez.
  */
-public final class GuavaCachingBocasBuilder {
+public final class MultiServiceGuavaCacheBuilder {
 	/** Whether the service has already been built. */
 	private boolean built = false;
 	/** Whether the cache is direct. */
 	private boolean direct = false;
-	/** Whether the cache is shared among the available buckets. */
-	private boolean shared = false;
-	/** Whether writes are always performed. */
-	private Boolean alwaysWrite = null;
 	/** Internal builder. */
 	private final CacheBuilder<Object, Object> builder = CacheBuilder.newBuilder().recordStats();
 
 	/** Constructor. */
-	GuavaCachingBocasBuilder() {
+	MultiServiceGuavaCacheBuilder() {
 	}
 
 	private void checkNotBuilt() {
@@ -56,7 +55,7 @@ public final class GuavaCachingBocasBuilder {
 	 * @throws IllegalStateException if a maximum size was already set
 	 * @throws IllegalStateException if the service has already been built
 	 */
-	public GuavaCachingBocasBuilder maximumSize(long size) {
+	public MultiServiceGuavaCacheBuilder maximumSize(long size) {
 		checkNotBuilt();
 		builder.maximumSize(size);
 		return this;
@@ -78,7 +77,7 @@ public final class GuavaCachingBocasBuilder {
 	 * @throws IllegalStateException if a maximum size was already set
 	 * @throws IllegalStateException if the service has already been built
 	 */
-	public GuavaCachingBocasBuilder maximumWeight(long weight) {
+	public MultiServiceGuavaCacheBuilder maximumWeight(long weight) {
 		checkNotBuilt();
 		builder.maximumWeight(weight).weigher(EntryWeigher.INSTANCE);
 		return this;
@@ -99,7 +98,7 @@ public final class GuavaCachingBocasBuilder {
 	 * @throws IllegalStateException if the time to idle or time to live was already set
 	 * @throws IllegalStateException if the service has already been built
 	 */
-	public GuavaCachingBocasBuilder expireAfterAccess(long duration, TimeUnit unit) {
+	public MultiServiceGuavaCacheBuilder expireAfterAccess(long duration, TimeUnit unit) {
 		checkNotBuilt();
 		builder.expireAfterAccess(duration, unit);
 		return this;
@@ -109,32 +108,9 @@ public final class GuavaCachingBocasBuilder {
 	 * Specifies the cache will use direct values.
 	 * @throws IllegalStateException if the service has already been built
 	 */
-	public GuavaCachingBocasBuilder direct() {
+	public MultiServiceGuavaCacheBuilder direct() {
 		checkNotBuilt();
 		this.direct = true;
-		return this;
-	}
-
-	/**
-	 * Specifies if the cached values will be shared among the available buckets.
-	 * @throws IllegalStateException if the service has already been built
-	 */
-	public GuavaCachingBocasBuilder shared() {
-		checkNotBuilt();
-		this.shared = true;
-		return this;
-	}
-
-	/**
-	 * Specifies whether writes are always propagated to the source service. For shared caches the
-	 * default value is true, otherwise is false.
-	 * @throws IllegalStateException if the value has already been set
-	 * @throws IllegalStateException if the service has already been built
-	 */
-	public GuavaCachingBocasBuilder alwaysWrite(boolean alwaysWrite) {
-		checkNotBuilt();
-		checkState(this.alwaysWrite == null, "The alwaysWrite flag has already been set");
-		this.alwaysWrite = alwaysWrite;
 		return this;
 	}
 
@@ -143,15 +119,14 @@ public final class GuavaCachingBocasBuilder {
 	 * @param service Repository to cache.
 	 * @return The caching repository.
 	 */
-	public CachingBocasService build(BocasService service) {
+	public MultiServiceGuavaCache build() {
 		checkNotBuilt();
 		built = true;
-		final boolean write = alwaysWrite != null ? alwaysWrite.booleanValue() : shared;
-		if (shared) {
-			return new SharedGuavaCachingBocasService(service, builder, direct, write);
-		} else {
-			return new BucketGuavaCachingBocasService(service, builder, direct, write);
+		if (direct) {
+			builder.softValues();
 		}
+		Cache<ByteString, LoadedBocasValue> cache = builder.build();
+		return new MultiServiceGuavaCache(direct, cache);
 	}
 
 }
