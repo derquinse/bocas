@@ -51,11 +51,10 @@ public class JEBocasTest {
 	public void sharedCache() throws Exception {
 		test(JEBocasServices.newBuilder().setCacheSizeMB(2).shared().build(dir()));
 	}
-	
-	@Test(expectedExceptions=Exception.class)
+
+	@Test(expectedExceptions = Exception.class)
 	public void readOnly() throws Exception {
 		test(JEBocasServices.newBuilder().readOnly().setCacheSizeMB(2).shared().build(dir()));
 	}
-	
 
 }
