@@ -74,12 +74,12 @@ final class DefaultJEBocas extends SkeletalBocas {
 	}
 
 	/** Constructor. */
-	DefaultJEBocas(Environment e) {
+	DefaultJEBocas(Environment e, boolean readOnly) {
 		this.environment = checkNotNull(e, "The environment must be provided");
 		DatabaseConfig dc = new DatabaseConfig();
 		dc.setAllowCreate(true);
 		dc.setTransactional(true);
-		dc.setReadOnly(false);
+		dc.setReadOnly(readOnly);
 		this.database = e.openDatabase(null, DB_NAME, dc);
 	}
 

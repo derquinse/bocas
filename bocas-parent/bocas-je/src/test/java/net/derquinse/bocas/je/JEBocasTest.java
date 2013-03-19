@@ -18,6 +18,8 @@ package net.derquinse.bocas.je;
 import net.derquinse.bocas.Bocas;
 import net.derquinse.bocas.BocasExerciser;
 
+import org.testng.annotations.Test;
+
 import com.google.common.io.Files;
 
 /**
@@ -28,14 +30,32 @@ public class JEBocasTest {
 	public JEBocasTest() {
 	}
 
-	// @Test
-	public void basic() throws Exception {
-		Bocas bocas = JEBocas.basic(Files.createTempDir().getAbsolutePath());
+	private static String dir() {
+		return Files.createTempDir().getAbsolutePath();
+	}
+
+	private void test(Bocas bocas) throws Exception {
 		try {
 			BocasExerciser.exercise(bocas);
 		} finally {
-			((DefaultJEBocas) bocas).close();
+			bocas.close();
 		}
-		BocasExerciser.exercise(bocas);
 	}
+
+	@Test
+	public void basic() throws Exception {
+		test(JEBocasServices.basic(dir()));
+	}
+
+	@Test
+	public void sharedCache() throws Exception {
+		test(JEBocasServices.newBuilder().setCacheSizeMB(2).shared().build(dir()));
+	}
+	
+	@Test(expectedExceptions=Exception.class)
+	public void readOnly() throws Exception {
+		test(JEBocasServices.newBuilder().readOnly().setCacheSizeMB(2).shared().build(dir()));
+	}
+	
+
 }
