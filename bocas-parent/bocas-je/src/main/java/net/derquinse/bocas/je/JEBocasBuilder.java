@@ -81,7 +81,7 @@ public final class JEBocasBuilder {
 	 * @throws IllegalStateException if the cache size has already been set.
 	 */
 	public JEBocasBuilder setCacheSize(long size) {
-		checkState(this.fileSize == null, "The cache file size has already been set");
+		checkState(this.cacheSize == null, "The cache file size has already been set");
 		checkArgument(size > 0, "The cache file size must be > 0");
 		this.cacheSize = size;
 		return this;
@@ -115,7 +115,7 @@ public final class JEBocasBuilder {
 	 * @throws IllegalStateException if the flag has already been set.
 	 */
 	public JEBocasBuilder readOnly() {
-		checkState(this.readOnly == null, "The shared cache flag has already been set");
+		checkState(this.readOnly == null, "The read only cache flag has already been set");
 		this.readOnly = true;
 		return this;
 	}
