@@ -19,7 +19,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 
-import net.derquinse.common.io.DerquinseByteStreams;
+import net.derquinse.common.io.MemoryByteStreams;
 
 import com.google.common.annotations.Beta;
 import com.google.common.io.InputSupplier;
@@ -42,7 +42,7 @@ public final class DirectBocasValue extends LoadedBocasValue {
 		this.size = checkPayload(payload).length;
 		this.buffer = ByteBuffer.allocateDirect(this.size);
 		buffer.put(payload).flip();
-		this.supplier = DerquinseByteStreams.newInputStreamSupplier(buffer);
+		this.supplier = MemoryByteStreams.newInputStreamSupplier(buffer);
 	}
 
 	/*
