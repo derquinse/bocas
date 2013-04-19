@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>net.derquinse.bocas</groupId>
 		<artifactId>bocas-parent</artifactId>
-		<version>1.1.8-SNAPSHOT</version>
+		<version>1.1.8</version>
 	</parent>
 	<artifactId>bocas-gcs</artifactId>
 	<name>Derquinse Bocas :: Google Cloud Storage Support</name>
@@ -12,7 +12,7 @@
 		<dependency>
 			<groupId>net.derquinse.bocas</groupId>
 			<artifactId>bocas</artifactId>
-			<version>1.1.8-SNAPSHOT</version>
+			<version>1.1.8</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
@@ -37,7 +37,7 @@
 		<dependency>
 			<groupId>net.derquinse.bocas</groupId>
 			<artifactId>bocas</artifactId>
-			<version>1.1.8-SNAPSHOT</version>
+			<version>1.1.8</version>
 			<type>test-jar</type>
 			<scope>test</scope>
 		</dependency>
