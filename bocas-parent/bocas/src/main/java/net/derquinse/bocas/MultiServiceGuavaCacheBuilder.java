@@ -116,7 +116,6 @@ public final class MultiServiceGuavaCacheBuilder {
 
 	/**
 	 * Builds a cache.
-	 * @param service Repository to cache.
 	 * @return The caching repository.
 	 */
 	public MultiServiceGuavaCache build() {
