@@ -66,7 +66,7 @@ public final class ZipBocas extends ForwardingBocas {
 			return ImmutableMap.of();
 		}
 		ImmutableMap.Builder<String, ByteString> builder = ImmutableMap.builder();
-		List<LoadedBocasValue> values = Lists.newArrayListWithCapacity(data.size());
+		List<MemoryByteSource> values = Lists.newArrayListWithCapacity(data.size());
 		for (Entry<String, MemoryByteSource> d : data.entrySet()) {
 			LoadedBocasValue value = BocasValue.of(d.getValue().read());
 			values.add(value);
