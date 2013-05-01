@@ -23,6 +23,7 @@ import net.derquinse.common.base.ByteString;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Optional;
+import com.google.common.io.ByteSource;
 
 /**
  * Interface for a Bocas repository bucket. Guava library is expected to provide a ByteString
@@ -56,7 +57,7 @@ public interface Bocas {
 	 * @return The object, if found.
 	 * @throws BocasException if an error occurs.
 	 */
-	Optional<BocasValue> get(ByteString key);
+	Optional<ByteSource> get(ByteString key);
 
 	/**
 	 * Returns the objects for a collection of keys.
@@ -64,19 +65,19 @@ public interface Bocas {
 	 * @return The objects found in the repository or an empty map if none is found.
 	 * @throws BocasException if an error occurs.
 	 */
-	Map<ByteString, BocasValue> get(Iterable<ByteString> keys);
+	Map<ByteString, ByteSource> get(Iterable<ByteString> keys);
 
 	/**
 	 * Puts a value into the repository.
 	 * @return The generated key.
 	 * @throws BocasException if an error occurs.
 	 */
-	ByteString put(BocasValue value);
+	ByteString put(ByteSource value);
 
 	/**
 	 * Puts some values into the repository in a single operation. The operation must be atomic.
 	 * @return The list of generated keys, in the same order than the objects provided.
 	 * @throws BocasException if an error occurs.
 	 */
-	List<ByteString> putAll(Iterable<? extends BocasValue> values);
+	List<ByteString> putAll(Iterable<? extends ByteSource> values);
 }

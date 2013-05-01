@@ -24,6 +24,7 @@ import net.derquinse.common.base.ByteString;
 import com.google.common.annotations.Beta;
 import com.google.common.base.Optional;
 import com.google.common.collect.ForwardingObject;
+import com.google.common.io.ByteSource;
 
 /**
  * A bocas bucket that forwards all its method calls to another.
@@ -71,7 +72,7 @@ public abstract class ForwardingBocas extends ForwardingObject implements Bocas 
 	 * @see net.derquinse.bocas.Bocas#get(net.derquinse.common.base.ByteString)
 	 */
 	@Override
-	public Optional<BocasValue> get(ByteString key) {
+	public Optional<ByteSource> get(ByteString key) {
 		return delegate().get(key);
 	}
 
@@ -80,16 +81,16 @@ public abstract class ForwardingBocas extends ForwardingObject implements Bocas 
 	 * @see net.derquinse.bocas.Bocas#get(java.lang.Iterable)
 	 */
 	@Override
-	public Map<ByteString, BocasValue> get(Iterable<ByteString> keys) {
+	public Map<ByteString, ByteSource> get(Iterable<ByteString> keys) {
 		return delegate().get(keys);
 	}
 
 	/*
 	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#put(net.derquinse.bocas.BocasValue)
+	 * @see net.derquinse.bocas.Bocas#put(com.google.common.io.ByteSource)
 	 */
 	@Override
-	public ByteString put(BocasValue value) {
+	public ByteString put(ByteSource value) {
 		return delegate().put(value);
 	}
 
@@ -98,7 +99,7 @@ public abstract class ForwardingBocas extends ForwardingObject implements Bocas 
 	 * @see net.derquinse.bocas.Bocas#putAll(java.lang.Iterable)
 	 */
 	@Override
-	public List<ByteString> putAll(Iterable<? extends BocasValue> values) {
+	public List<ByteString> putAll(Iterable<? extends ByteSource> values) {
 		return delegate().putAll(values);
 	}
 }
