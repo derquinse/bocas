@@ -24,11 +24,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import net.derquinse.common.base.ByteString;
+import net.derquinse.common.io.MemoryByteSource;
+import net.derquinse.common.util.zip.LoadedZipFile;
 import net.derquinse.common.util.zip.MaybeCompressed;
-import net.derquinse.common.util.zip.ZipFiles;
+import net.derquinse.common.util.zip.ZipFileLoader;
 
 import com.google.common.annotations.Beta;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.io.InputSupplier;
@@ -60,15 +61,14 @@ public final class ZipBocas extends ForwardingBocas {
 		return bocas;
 	}
 
-	private Map<String, ByteString> putZip(Map<String, byte[]> data) {
+	private Map<String, ByteString> putZip(LoadedZipFile data) throws IOException {
 		if (data == null || data.isEmpty()) {
 			return ImmutableMap.of();
 		}
-		ImmutableList<Entry<String, byte[]>> input = ImmutableList.copyOf(data.entrySet());
 		ImmutableMap.Builder<String, ByteString> builder = ImmutableMap.builder();
-		List<LoadedBocasValue> values = Lists.newArrayListWithCapacity(input.size());
-		for (Entry<String, byte[]> d : input) {
-			LoadedBocasValue value = BocasValue.of(d.getValue());
+		List<LoadedBocasValue> values = Lists.newArrayListWithCapacity(data.size());
+		for (Entry<String, MemoryByteSource> d : data.entrySet()) {
+			LoadedBocasValue value = BocasValue.of(d.getValue().read());
 			values.add(value);
 			builder.put(d.getKey(), value.key());
 		}
@@ -76,16 +76,14 @@ public final class ZipBocas extends ForwardingBocas {
 		return builder.build();
 	}
 
-	private Map<String, MaybeCompressed<ByteString>> putZipAndGZip(Map<String, MaybeCompressed<byte[]>> data) {
+	private Map<String, MaybeCompressed<ByteString>> putZipAndGZip(LoadedZipFile data) throws IOException {
 		if (data == null || data.isEmpty()) {
 			return ImmutableMap.of();
 		}
-
-		ImmutableList<Entry<String, MaybeCompressed<byte[]>>> input = ImmutableList.copyOf(data.entrySet());
 		ImmutableMap.Builder<String, MaybeCompressed<ByteString>> builder = ImmutableMap.builder();
-		List<LoadedBocasValue> values = Lists.newArrayListWithCapacity(input.size());
-		for (Entry<String, MaybeCompressed<byte[]>> d : input) {
-			LoadedBocasValue value = BocasValue.of(d.getValue().getPayload());
+		List<LoadedBocasValue> values = Lists.newArrayListWithCapacity(data.size());
+		for (Entry<String, MaybeCompressed<MemoryByteSource>> d : data.maybeGzip().entrySet()) {
+			LoadedBocasValue value = BocasValue.of(d.getValue().getPayload().read());
 			boolean compressed = d.getValue().isCompressed();
 			values.add(value);
 			builder.put(d.getKey(), MaybeCompressed.of(compressed, value.key()));
@@ -99,9 +97,9 @@ public final class ZipBocas extends ForwardingBocas {
 	 * @return A map from the zip entry names to their keys.
 	 * @throws BocasException if an error occurs.
 	 */
-	public Map<String, ByteString> putZip(InputStream object) {
+	public Map<String, ByteString> putZip(InputStream input) {
 		try {
-			return putZip(ZipFiles.loadZip(object));
+			return putZip(ZipFileLoader.get().load(input));
 		} catch (IOException e) {
 			throw new BocasException(e);
 		}
@@ -112,9 +110,9 @@ public final class ZipBocas extends ForwardingBocas {
 	 * @return A map from the zip entry names to their keys.
 	 * @throws BocasException if an error occurs.
 	 */
-	public Map<String, ByteString> putZip(InputSupplier<? extends InputStream> object) {
+	public Map<String, ByteString> putZip(InputSupplier<? extends InputStream> input) {
 		try {
-			return putZip(ZipFiles.loadZip(object));
+			return putZip(ZipFileLoader.get().load(input));
 		} catch (IOException e) {
 			throw new BocasException(e);
 		}
@@ -126,9 +124,9 @@ public final class ZipBocas extends ForwardingBocas {
 	 *         compressed.
 	 * @throws BocasException if an error occurs.
 	 */
-	public Map<String, MaybeCompressed<ByteString>> putZipAndGZip(InputStream object) {
+	public Map<String, MaybeCompressed<ByteString>> putZipAndGZip(InputStream input) {
 		try {
-			return putZipAndGZip(ZipFiles.loadZipAndGZip(object));
+			return putZipAndGZip(ZipFileLoader.get().load(input));
 		} catch (IOException e) {
 			throw new BocasException(e);
 		}
@@ -140,9 +138,9 @@ public final class ZipBocas extends ForwardingBocas {
 	 *         compressed.
 	 * @throws BocasException if an error occurs.
 	 */
-	public Map<String, MaybeCompressed<ByteString>> putZipAndGZip(InputSupplier<? extends InputStream> object) {
+	public Map<String, MaybeCompressed<ByteString>> putZipAndGZip(InputSupplier<? extends InputStream> input) {
 		try {
-			return putZipAndGZip(ZipFiles.loadZipAndGZip(object));
+			return putZipAndGZip(ZipFileLoader.get().load(input));
 		} catch (IOException e) {
 			throw new BocasException(e);
 		}
