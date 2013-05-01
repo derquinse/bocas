@@ -15,13 +15,16 @@
  */
 package net.derquinse.bocas;
 
+import static net.derquinse.bocas.BocasHashFunction.sha256;
+import static net.derquinse.common.io.MemoryByteSourceLoader.get;
+
 import org.testng.annotations.Test;
 
 /**
  * Test for {@link MemoryBocas}.
  */
 public class MemoryBocasTest {
-	private BocasService memory = BocasServices.shared(BocasServices.memoryBucket());
+	private BocasService memory = BocasServices.shared(BocasServices.memoryBucket(sha256(), get()));
 
 	@Test
 	public void test() throws Exception {

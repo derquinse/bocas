@@ -48,6 +48,8 @@ final class SeededBocas extends ForwardingBocas {
 		this.primary = checkNotNull(primary, "The primary repository must be provided");
 		this.seed = checkNotNull(seed, "The seed repository must be provided");
 		checkArgument(primary != seed, "Primary and seed repositories should not be the same");
+		checkArgument(primary.getHashFunction().equals(seed.getHashFunction()),
+				"The primary and replica hash functions must be the same");
 	}
 
 	@Override

@@ -15,14 +15,16 @@
  */
 package net.derquinse.bocas;
 
-import static net.derquinse.bocas.BocasServices.memoryBucket;
+import static net.derquinse.bocas.BocasHashFunction.sha256;
 import static net.derquinse.bocas.BocasServices.shared;
+import static net.derquinse.common.io.MemoryByteSourceLoader.get;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 import java.util.Map;
 
 import net.derquinse.common.base.ByteString;
+import net.derquinse.common.io.MemoryByteSource;
 
 import org.testng.annotations.Test;
 
@@ -31,10 +33,14 @@ import org.testng.annotations.Test;
  */
 public class SyncReplicaTest {
 
+	private static Bocas newBucket() {
+		return BocasServices.memoryBucket(sha256(), get());
+	}
+
 	private void test(Bocas primary, Bocas replica) throws Exception {
-		Map<ByteString, LoadedBocasValue> set1 = BocasExerciser.dataSet(20);
-		Map<ByteString, LoadedBocasValue> set2 = BocasExerciser.dataSet(20);
-		Map<ByteString, LoadedBocasValue> set3 = BocasExerciser.dataSet(20);
+		Map<ByteString, MemoryByteSource> set1 = BocasExerciser.dataSet(sha256(), 20);
+		Map<ByteString, MemoryByteSource> set2 = BocasExerciser.dataSet(sha256(), 20);
+		Map<ByteString, MemoryByteSource> set3 = BocasExerciser.dataSet(sha256(), 20);
 		assertTrue(primary.contained(set1.keySet()).isEmpty());
 		assertTrue(primary.contained(set2.keySet()).isEmpty());
 		assertTrue(primary.contained(set3.keySet()).isEmpty());
@@ -71,15 +77,15 @@ public class SyncReplicaTest {
 
 	@Test
 	public void bucket() throws Exception {
-		Bocas primary = memoryBucket();
-		Bocas replica = memoryBucket();
+		Bocas primary = newBucket();
+		Bocas replica = newBucket();
 		test(primary, replica);
 	}
 
 	@Test
 	public void service() throws Exception {
-		BocasService primary = shared(memoryBucket());
-		BocasService replica = shared(memoryBucket());
+		BocasService primary = shared(newBucket());
+		BocasService replica = shared(newBucket());
 		test(primary.getBucket("test"), replica.getBucket("test"));
 	}
 

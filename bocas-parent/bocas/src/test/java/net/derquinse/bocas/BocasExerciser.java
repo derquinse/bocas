@@ -21,7 +21,6 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -30,16 +29,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import net.derquinse.common.base.ByteString;
+import net.derquinse.common.io.MemoryByteSource;
+import net.derquinse.common.io.MemoryByteSourceLoader;
 import net.derquinse.common.test.RandomSupport;
 import net.derquinse.common.util.zip.MaybeCompressed;
+import net.derquinse.common.util.zip.ZipFileLoader;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.io.ByteStreams;
-import com.google.common.io.InputSupplier;
+import com.google.common.io.ByteSource;
 import com.google.common.primitives.Longs;
 
 /**
@@ -56,26 +57,26 @@ public final class BocasExerciser {
 	/** Number of tasks. */
 	private final int tasks;
 
-	public static LoadedBocasValue data() {
+	public static MemoryByteSource data() {
 		byte[] deterministic = Longs.toByteArray(INDEX.incrementAndGet());
 		byte[] data = RandomSupport.getBytes(RandomSupport.nextInt(1024, 10240));
 		for (int i = 0; i < deterministic.length; i++) {
 			data[i] = deterministic[i];
 		}
-		return BocasValue.of(data);
+		return MemoryByteSource.wrap(data);
 	}
 
-	public static Map<ByteString, LoadedBocasValue> dataSet(int size) {
-		Map<ByteString, LoadedBocasValue> map = Maps.newHashMapWithExpectedSize(size);
+	public static Map<ByteString, MemoryByteSource> dataSet(BocasHashFunction f, int size) {
+		Map<ByteString, MemoryByteSource> map = Maps.newHashMapWithExpectedSize(size);
 		for (int i = 0; i < size; i++) {
-			LoadedBocasValue v = data();
-			map.put(v.key(), v);
+			MemoryByteSource v = data();
+			map.put(f.hash(v), v);
 		}
 		return map;
 	}
 
-	public static void check(LoadedBocasValue value, InputSupplier<? extends InputStream> data) throws IOException {
-		assertEquals(ByteStreams.toByteArray(data), ByteStreams.toByteArray(value));
+	public static void check(ByteSource value, ByteSource data) throws IOException {
+		assertEquals(data.read(), value.read());
 	}
 
 	/** Exercises a Bocas repository. */
@@ -97,31 +98,27 @@ public final class BocasExerciser {
 				.build(service);
 		Bocas cached = cache.getBucket(bucketName);
 		exercise(cached);
-		LoadedBocasValue value = data();
-		bucket.put(value);
-		assertTrue(cached.contains(value.key()));
+		MemoryByteSource value = data();
+		ByteString key = bucket.put(value);
+		assertTrue(cached.contains(key));
 		// Direct cache
-		cache = BocasServices.cache().expireAfterAccess(10L, TimeUnit.MINUTES).maximumWeight(10000000L).direct()
-				.build(service);
+		cache = BocasServices.cache().expireAfterAccess(10L, TimeUnit.MINUTES).maximumWeight(10000000L)
+				.loader(MemoryByteSourceLoader.get().direct(true)).build(service);
 		cached = cache.getBucket(bucketName);
 		exercise(cached);
 		value = data();
-		bucket.put(value);
-		assertTrue(cached.contains(value.key()));
+		key = bucket.put(value);
+		assertTrue(cached.contains(key));
 	}
 
 	/** Exercise a Bocas repository putting it as the seed of a memory one. */
 	public static void fallback(BocasService service, String bucketName) throws Exception {
 		final Bocas bocas = service.getBucket(bucketName);
-		final Bocas primary = BocasServices.memoryBucket();
+		final Bocas primary = BocasServices.memoryBucket(bocas.getHashFunction(), MemoryByteSourceLoader.get().merge(true));
 		final Bocas fallback = BocasServices.seeded(primary, bocas);
 		BocasExerciser.exercise(fallback);
-		LoadedBocasValue value;
-		ByteString key;
-		do {
-			value = data();
-			key = value.key();
-		} while (bocas.contains(key));
+		ByteSource value = data();
+		ByteString key = bocas.getHashFunction().hash(value);
 		assertFalse(primary.contains(key));
 		assertFalse(fallback.contains(key));
 		bocas.put(value);
@@ -135,14 +132,18 @@ public final class BocasExerciser {
 		this.tasks = Math.max(10, tasks);
 	}
 
-	private void checkInRepository(LoadedBocasValue value) throws IOException {
-		ByteString k = value.key();
+	private ByteString hash(ByteSource value) {
+		return bocas.getHashFunction().hash(value);
+	}
+
+	private void checkInRepository(ByteSource value) throws IOException {
+		ByteString k = hash(value);
 		assertTrue(bocas.contains(k));
 		assertTrue(bocas.contained(ImmutableSet.of(k)).contains(k));
-		Optional<BocasValue> optional = bocas.get(k);
+		Optional<ByteSource> optional = bocas.get(k);
 		assertTrue(optional.isPresent());
 		check(value, optional.get());
-		Map<ByteString, BocasValue> map = bocas.get(ImmutableSet.of(k));
+		Map<ByteString, ByteSource> map = bocas.get(ImmutableSet.of(k));
 		assertTrue(map.containsKey(k));
 		// Check with repeatable read
 		for (int i = 0; i < 5; i++) {
@@ -150,15 +151,16 @@ public final class BocasExerciser {
 		}
 	}
 
-	private void put(LoadedBocasValue value) throws IOException {
+	private ByteString put(ByteSource value) throws IOException {
 		ByteString returned = bocas.put(value);
-		ByteString k = value.key();
+		ByteString k = hash(value);
 		assertEquals(returned, k);
 		checkInRepository(value);
+		return k;
 	}
 
-	private void checkNotInRepository(LoadedBocasValue value) throws Exception {
-		ByteString k = value.key();
+	private void checkNotInRepository(ByteSource value) throws Exception {
+		ByteString k = hash(value);
 		assertFalse(bocas.contains(k));
 		assertTrue(bocas.contained(ImmutableSet.of(k)).isEmpty());
 		assertFalse(bocas.get(k).isPresent());
@@ -167,18 +169,16 @@ public final class BocasExerciser {
 
 	/** Exercise the repository. */
 	private void run() throws Exception {
-		LoadedBocasValue data1 = data();
-		ByteString k1 = data1.key();
-		put(data1);
-		LoadedBocasValue data2 = data();
-		ByteString k2 = data2.key();
-		LoadedBocasValue data3 = data();
-		ByteString k3 = data3.key();
-		put(data2);
+		MemoryByteSource data1 = data();
+		ByteString k1 = put(data1);
+		MemoryByteSource data2 = data();
+		ByteString k2 = put(data2);
+		MemoryByteSource data3 = data();
+		ByteString k3 = hash(data3);
 		checkInRepository(data1);
 		checkNotInRepository(data3);
-		LoadedBocasValue data4 = data();
-		ByteString k4 = data4.key();
+		MemoryByteSource data4 = data();
+		ByteString k4 = hash(data4);
 		List<ByteString> list = ImmutableList.of(k1, k2, k3, k4, k1);
 		assertEquals(bocas.contained(list).size(), 2);
 		assertEquals(bocas.get(list).size(), 2);
@@ -194,10 +194,10 @@ public final class BocasExerciser {
 		assertEquals(bocas.get(list).size(), 3);
 		// Multiple operation - Phase I
 		List<ByteString> keyList = Lists.newLinkedList();
-		List<BocasValue> valueList = Lists.newLinkedList();
+		List<MemoryByteSource> valueList = Lists.newLinkedList();
 		for (int i = 0; i < 15; i++) {
-			LoadedBocasValue e = data();
-			keyList.add(e.key());
+			MemoryByteSource e = data();
+			keyList.add(hash(e));
 			valueList.add(e);
 		}
 		bocas.putAll(valueList);
@@ -205,8 +205,8 @@ public final class BocasExerciser {
 		assertTrue(bocas.get(keyList).keySet().containsAll(keyList));
 		// Multiple operation - Phase II
 		for (int i = 0; i < 15; i++) {
-			LoadedBocasValue e = data();
-			keyList.add(e.key());
+			MemoryByteSource e = data();
+			keyList.add(hash(e));
 			valueList.add(e);
 		}
 		bocas.putAll(valueList);
@@ -214,10 +214,11 @@ public final class BocasExerciser {
 		assertTrue(bocas.get(keyList).keySet().containsAll(keyList));
 		// ZIP
 		ZipBocas zb = ZipBocas.of(bocas);
-		Map<String, ByteString> entries = zb.putZip(getClass().getResourceAsStream("loren.zip"));
+		Map<String, ByteString> entries = zb.putZip(ZipFileLoader.get().load(getClass().getResourceAsStream("loren.zip")));
 		assertEquals(bocas.contained(entries.values()).size(), 3);
 		// ZIP
-		Map<String, MaybeCompressed<ByteString>> mentries = zb.putZipAndGZip(getClass().getResourceAsStream("loren.zip"));
+		Map<String, MaybeCompressed<ByteString>> mentries = zb.putZipAndGZip(ZipFileLoader.get().load(
+				getClass().getResourceAsStream("loren.zip")));
 		assertEquals(bocas.contained(entries.values()).size(), 3);
 		for (MaybeCompressed<ByteString> mk : mentries.values()) {
 			assertTrue(mk.isCompressed());

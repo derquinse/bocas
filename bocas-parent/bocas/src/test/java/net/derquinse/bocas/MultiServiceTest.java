@@ -15,14 +15,16 @@
  */
 package net.derquinse.bocas;
 
-import static net.derquinse.bocas.BocasServices.memoryBucket;
+import static net.derquinse.bocas.BocasHashFunction.sha256;
 import static net.derquinse.bocas.BocasServices.shared;
+import static net.derquinse.common.io.MemoryByteSourceLoader.get;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 import java.util.Map;
 
 import net.derquinse.common.base.ByteString;
+import net.derquinse.common.io.MemoryByteSource;
 
 import org.testng.annotations.Test;
 
@@ -30,19 +32,22 @@ import org.testng.annotations.Test;
  * Test for multiservice cache.
  */
 public class MultiServiceTest {
+	private static Bocas newBucket() {
+		return BocasServices.memoryBucket(sha256(), get());
+	}
 
 	@Test
 	public void service() throws Exception {
-		BocasService primaryService = shared(memoryBucket());
-		BocasService secondaryService = shared(memoryBucket());
-		final Bocas b1= primaryService.getBucket("test");
+		BocasService primaryService = shared(newBucket());
+		BocasService secondaryService = shared(newBucket());
+		final Bocas b1 = primaryService.getBucket("test");
 		final Bocas b2 = secondaryService.getBucket("test");
 		MultiServiceGuavaCache cache = BocasServices.multiServiceCache().build();
 		final Bocas primary = cache.decorate(primaryService).getBucket("test");
 		final Bocas secondary = cache.decorate(secondaryService).getBucket("test");
-		Map<ByteString, LoadedBocasValue> set1 = BocasExerciser.dataSet(20);
-		Map<ByteString, LoadedBocasValue> set2 = BocasExerciser.dataSet(20);
-		Map<ByteString, LoadedBocasValue> set3 = BocasExerciser.dataSet(20);
+		Map<ByteString, MemoryByteSource> set1 = BocasExerciser.dataSet(sha256(), 20);
+		Map<ByteString, MemoryByteSource> set2 = BocasExerciser.dataSet(sha256(), 20);
+		Map<ByteString, MemoryByteSource> set3 = BocasExerciser.dataSet(sha256(), 20);
 		assertTrue(primary.get(set1.keySet()).isEmpty());
 		assertTrue(primary.get(set2.keySet()).isEmpty());
 		assertTrue(primary.get(set3.keySet()).isEmpty());
