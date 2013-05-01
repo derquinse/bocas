@@ -15,18 +15,20 @@
  */
 package net.derquinse.bocas;
 
+import net.derquinse.common.io.MemoryByteSource;
+
 import com.google.common.cache.Weigher;
+import com.google.common.primitives.Ints;
 
 /**
  * Guava-based cache entry weigher.
  * @author Andres Rodriguez.
  */
-enum EntryWeigher implements Weigher<Object, BocasValue> {
+enum EntryWeigher implements Weigher<Object, MemoryByteSource> {
 	INSTANCE;
 
 	@Override
-	public int weigh(Object key, BocasValue value) {
-		Integer size = value.getSize();
-		return size != null ? 16 + size.intValue() : 8192;
+	public int weigh(Object key, MemoryByteSource value) {
+		return Ints.saturatedCast(value.size() + 16);
 	}
 }

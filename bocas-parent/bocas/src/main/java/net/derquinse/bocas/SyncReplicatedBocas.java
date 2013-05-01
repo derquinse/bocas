@@ -28,12 +28,13 @@ import java.util.Set;
 import net.derquinse.common.base.ByteString;
 
 import com.google.common.base.Optional;
+import com.google.common.io.ByteSource;
 
 /**
  * Bocas transformer that synchronously replicates operation in another bucket.
  * @author Andres Rodriguez.
  */
-final class SyncReplicatedBocas extends SkeletalBocas {
+final class SyncReplicatedBocas extends SkeletalBocas<ByteSource> {
 	/** Primary bucket. */
 	private final Bocas primary;
 	/** Replica bucket. */
@@ -43,10 +44,18 @@ final class SyncReplicatedBocas extends SkeletalBocas {
 
 	/** Constructor. */
 	SyncReplicatedBocas(Bocas primary, Bocas replica, boolean checkBeforeWrite) {
-		this.primary = checkNotNull(primary, "The primary bucket must be provided.");
+		super(checkNotNull(primary, "The primary bucket must be provided.").getHashFunction());
+		this.primary = primary;
 		this.replica = checkNotNull(replica, "The replica bucket must be provided.");
 		checkArgument(primary != replica, "The primary and replica bucket can't be the same");
+		checkArgument(primary.getHashFunction().equals(replica.getHashFunction()),
+				"The primary and replica hash functions must be the same");
 		this.checkBeforeWrite = checkBeforeWrite;
+	}
+
+	@Override
+	protected ByteSource transform(ByteSource value) {
+		return value;
 	}
 
 	/*
@@ -81,7 +90,7 @@ final class SyncReplicatedBocas extends SkeletalBocas {
 	 * @see net.derquinse.bocas.Bocas#get(net.derquinse.common.base.ByteString)
 	 */
 	@Override
-	public Optional<BocasValue> get(ByteString key) {
+	public Optional<ByteSource> get(ByteString key) {
 		return primary.get(key);
 	}
 
@@ -90,26 +99,17 @@ final class SyncReplicatedBocas extends SkeletalBocas {
 	 * @see net.derquinse.bocas.Bocas#get(java.lang.Iterable)
 	 */
 	@Override
-	public Map<ByteString, BocasValue> get(Iterable<ByteString> keys) {
+	public Map<ByteString, ByteSource> get(Iterable<ByteString> keys) {
 		return primary.get(keys);
 	}
 
 	/*
 	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.SkeletalBocas#load(net.derquinse.bocas.BocasValue)
-	 */
-	@Override
-	protected LoadedBocasValue load(BocasValue value) {
-		return value.toLoaded();
-	}
-
-	/*
-	 * (non-Javadoc)
 	 * @see net.derquinse.bocas.SkeletalBocas#put(net.derquinse.common.base.ByteString,
-	 * net.derquinse.bocas.LoadedBocasValue)
+	 * com.google.common.io.ByteSource)
 	 */
 	@Override
-	protected void put(ByteString key, LoadedBocasValue value) {
+	protected void put(ByteString key, ByteSource value) {
 		if (checkBeforeWrite && contains(key)) {
 			return; // nothing to do
 		}
@@ -122,8 +122,8 @@ final class SyncReplicatedBocas extends SkeletalBocas {
 	 * @see net.derquinse.bocas.SkeletalBocas#putAll(java.util.Map)
 	 */
 	@Override
-	protected void putAll(Map<ByteString, LoadedBocasValue> entries) {
-		final Map<ByteString, LoadedBocasValue> map;
+	protected void putAll(Map<ByteString, ByteSource> entries) {
+		final Map<ByteString, ByteSource> map;
 		if (checkBeforeWrite) {
 			Set<ByteString> found = contained(entries.keySet());
 			if (found.isEmpty()) {

@@ -31,6 +31,9 @@ import com.google.common.io.ByteSource;
  */
 @Beta
 public interface Bocas {
+	/** Returns the hash function being used. */
+	BocasHashFunction getHashFunction();
+
 	/**
 	 * Closes the bucket so it cannot be used again. Optional operation, buckets that do not need to
 	 * be closed ignore this operation. Any operation other than close should throw

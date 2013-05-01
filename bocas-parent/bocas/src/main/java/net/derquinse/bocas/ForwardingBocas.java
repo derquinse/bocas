@@ -42,6 +42,15 @@ public abstract class ForwardingBocas extends ForwardingObject implements Bocas 
 
 	/*
 	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.Bocas#getHashFunction()
+	 */
+	@Override
+	public BocasHashFunction getHashFunction() {
+		return delegate().getHashFunction();
+	}
+
+	/*
+	 * (non-Javadoc)
 	 * @see net.derquinse.bocas.Bocas#close()
 	 */
 	@Override

@@ -20,6 +20,8 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 
 import net.derquinse.common.base.ByteString;
+import net.derquinse.common.io.MemoryByteSource;
+import net.derquinse.common.io.MemoryByteSourceLoader;
 
 import com.google.common.cache.Cache;
 import com.google.common.collect.Sets;
@@ -30,15 +32,16 @@ import com.google.common.collect.Sets;
  */
 final class SharedGuavaCachingBocas extends AbstractGuavaCachingBocas<ByteString> {
 	/** Constructor. */
-	SharedGuavaCachingBocas(Bocas bocas, Cache<ByteString, LoadedBocasValue> cache, boolean direct, boolean alwaysWrite) {
-		super(bocas, cache, direct, alwaysWrite);
+	SharedGuavaCachingBocas(Bocas bocas, MemoryByteSourceLoader loader, Cache<ByteString, MemoryByteSource> cache,
+			boolean alwaysWrite) {
+		super(bocas, loader, cache, alwaysWrite);
 	}
 
 	@Override
-	Callable<LoadedBocasValue> getLoader(final ByteString internalKey) {
-		return new Callable<LoadedBocasValue>() {
+	Callable<MemoryByteSource> getLoader(final ByteString internalKey) {
+		return new Callable<MemoryByteSource>() {
 			@Override
-			public LoadedBocasValue call() throws Exception {
+			public MemoryByteSource call() throws Exception {
 				return loadFromSource(internalKey);
 			}
 		};
@@ -66,7 +69,7 @@ final class SharedGuavaCachingBocas extends AbstractGuavaCachingBocas<ByteString
 		return internalKeys;
 	}
 
-	<V extends BocasValue> Map<ByteString, V> toInternalEntryMap(Map<ByteString, V> entries) {
+	Map<ByteString, MemoryByteSource> toInternalEntryMap(Map<ByteString, MemoryByteSource> entries) {
 		return entries;
 	}
 }

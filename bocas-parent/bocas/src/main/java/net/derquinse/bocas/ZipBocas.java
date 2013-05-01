@@ -18,7 +18,6 @@ package net.derquinse.bocas;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -27,12 +26,10 @@ import net.derquinse.common.base.ByteString;
 import net.derquinse.common.io.MemoryByteSource;
 import net.derquinse.common.util.zip.LoadedZipFile;
 import net.derquinse.common.util.zip.MaybeCompressed;
-import net.derquinse.common.util.zip.ZipFileLoader;
 
 import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.io.InputSupplier;
 
 /**
  * Bocas bucket decorator with zip file support.
@@ -61,89 +58,60 @@ public final class ZipBocas extends ForwardingBocas {
 		return bocas;
 	}
 
-	private Map<String, ByteString> putZip(LoadedZipFile data) throws IOException {
+	/**
+	 * Puts a loaded zip file into the repository.
+	 * @return A map from the zip entry names to their keys.
+	 * @throws BocasException if an error occurs.
+	 */
+	public Map<String, ByteString> putZip(LoadedZipFile data) {
 		if (data == null || data.isEmpty()) {
 			return ImmutableMap.of();
 		}
-		ImmutableMap.Builder<String, ByteString> builder = ImmutableMap.builder();
-		List<MemoryByteSource> values = Lists.newArrayListWithCapacity(data.size());
+		final int n = data.size();
+		final List<String> names = Lists.newArrayListWithCapacity(n);
+		final List<MemoryByteSource> values = Lists.newArrayListWithCapacity(n);
 		for (Entry<String, MemoryByteSource> d : data.entrySet()) {
-			LoadedBocasValue value = BocasValue.of(d.getValue().read());
-			values.add(value);
-			builder.put(d.getKey(), value.key());
+			names.add(d.getKey());
+			values.add(d.getValue());
 		}
-		putAll(values);
+		List<ByteString> keys = putAll(values);
+		if (keys.size() != n) {
+			throw new IllegalStateException("Invalid number of keys");
+		}
+		final ImmutableMap.Builder<String, ByteString> builder = ImmutableMap.builder();
+		for (int i = 0; i < n; i++) {
+			builder.put(names.get(i), keys.get(i));
+		}
 		return builder.build();
 	}
 
-	private Map<String, MaybeCompressed<ByteString>> putZipAndGZip(LoadedZipFile data) throws IOException {
+	/**
+	 * Puts a loaded zip file into the repository trying to compress them individually with gzip.
+	 * @return A map from the zip entry names to their keys, indicating if the entry has been
+	 *         compressed.
+	 * @throws BocasException if an error occurs.
+	 */
+	public Map<String, MaybeCompressed<ByteString>> putZipAndGZip(LoadedZipFile data) throws IOException {
 		if (data == null || data.isEmpty()) {
 			return ImmutableMap.of();
 		}
-		ImmutableMap.Builder<String, MaybeCompressed<ByteString>> builder = ImmutableMap.builder();
-		List<LoadedBocasValue> values = Lists.newArrayListWithCapacity(data.size());
+		final int n = data.size();
+		final List<String> names = Lists.newArrayListWithCapacity(n);
+		final List<MemoryByteSource> values = Lists.newArrayListWithCapacity(n);
+		final List<Boolean> compressed = Lists.newArrayListWithCapacity(n);
 		for (Entry<String, MaybeCompressed<MemoryByteSource>> d : data.maybeGzip().entrySet()) {
-			LoadedBocasValue value = BocasValue.of(d.getValue().getPayload().read());
-			boolean compressed = d.getValue().isCompressed();
-			values.add(value);
-			builder.put(d.getKey(), MaybeCompressed.of(compressed, value.key()));
+			names.add(d.getKey());
+			compressed.add(d.getValue().isCompressed());
+			values.add(d.getValue().getPayload());
 		}
-		putAll(values);
+		List<ByteString> keys = putAll(values);
+		if (keys.size() != n) {
+			throw new IllegalStateException("Invalid number of keys");
+		}
+		final ImmutableMap.Builder<String, MaybeCompressed<ByteString>> builder = ImmutableMap.builder();
+		for (int i = 0; i < n; i++) {
+			builder.put(names.get(i), MaybeCompressed.of(compressed.get(i), keys.get(i)));
+		}
 		return builder.build();
 	}
-
-	/**
-	 * Puts a zip object into the repository.
-	 * @return A map from the zip entry names to their keys.
-	 * @throws BocasException if an error occurs.
-	 */
-	public Map<String, ByteString> putZip(InputStream input) {
-		try {
-			return putZip(ZipFileLoader.get().load(input));
-		} catch (IOException e) {
-			throw new BocasException(e);
-		}
-	}
-
-	/**
-	 * Puts a zip object into the repository.
-	 * @return A map from the zip entry names to their keys.
-	 * @throws BocasException if an error occurs.
-	 */
-	public Map<String, ByteString> putZip(InputSupplier<? extends InputStream> input) {
-		try {
-			return putZip(ZipFileLoader.get().load(input));
-		} catch (IOException e) {
-			throw new BocasException(e);
-		}
-	}
-
-	/**
-	 * Puts a zip object into the repository trying to compress them individually with gzip.
-	 * @return A map from the zip entry names to their keys, indicating if the entry has been
-	 *         compressed.
-	 * @throws BocasException if an error occurs.
-	 */
-	public Map<String, MaybeCompressed<ByteString>> putZipAndGZip(InputStream input) {
-		try {
-			return putZipAndGZip(ZipFileLoader.get().load(input));
-		} catch (IOException e) {
-			throw new BocasException(e);
-		}
-	}
-
-	/**
-	 * Puts a zip object into the repository trying to compress them individually with gzip.
-	 * @return A map from the zip entry names to their keys, indicating if the entry has been
-	 *         compressed.
-	 * @throws BocasException if an error occurs.
-	 */
-	public Map<String, MaybeCompressed<ByteString>> putZipAndGZip(InputSupplier<? extends InputStream> input) {
-		try {
-			return putZipAndGZip(ZipFileLoader.get().load(input));
-		} catch (IOException e) {
-			throw new BocasException(e);
-		}
-	}
-
 }

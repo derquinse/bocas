@@ -16,6 +16,9 @@
 package net.derquinse.bocas;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static net.derquinse.bocas.InternalUtils.checkLoader;
+import net.derquinse.common.io.MemoryByteSource;
+import net.derquinse.common.io.MemoryByteSourceLoader;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -34,33 +37,25 @@ abstract class AbstractGuavaCachingBocasService<K> implements CachingBocasServic
 	/** Bucket Cache. */
 	private final LoadingCache<String, Bocas> bucketCache;
 	/** Entry Cache. */
-	private final Cache<K, LoadedBocasValue> cache;
-	/** Whether the cache is direct. */
-	private final boolean direct;
+	private final Cache<K, MemoryByteSource> cache;
+	/** Memory loader to use. */
+	private final MemoryByteSourceLoader loader;
 	/** Whether writes are always performed. */
 	private final boolean alwaysWrite;
 
 	/** Constructor. */
-	AbstractGuavaCachingBocasService(BocasService service, CacheBuilder<Object, Object> builder, boolean direct,
-			boolean alwaysWrite) {
+	AbstractGuavaCachingBocasService(BocasService service, MemoryByteSourceLoader loader,
+			CacheBuilder<Object, Object> builder, boolean alwaysWrite) {
 		this.service = checkNotNull(service);
-		this.direct = direct;
+		this.loader = checkLoader(loader);
 		this.alwaysWrite = alwaysWrite;
-		if (direct) {
-			builder.softValues();
-		}
 		this.bucketCache = CacheBuilder.newBuilder().build(new BucketLoader());
 		this.cache = builder.recordStats().build();
 	}
 
 	/** Returns the cache to use. */
-	final Cache<K, LoadedBocasValue> getCache() {
+	final Cache<K, MemoryByteSource> getCache() {
 		return cache;
-	}
-
-	/** Returns whether the cache is direct. */
-	final boolean isDirect() {
-		return direct;
 	}
 
 	/** Returns whether writes are always performed. */
@@ -97,13 +92,13 @@ abstract class AbstractGuavaCachingBocasService<K> implements CachingBocasServic
 		return cache.stats();
 	}
 
-	abstract AbstractGuavaCachingBocas<K> createBucket(Bocas source);
+	abstract AbstractGuavaCachingBocas<K> createBucket(Bocas source, MemoryByteSourceLoader loader);
 
 	private final class BucketLoader extends CacheLoader<String, Bocas> {
 		@Override
 		public Bocas load(String name) throws Exception {
 			try {
-				return createBucket(service.getBucket(name));
+				return createBucket(service.getBucket(name), loader);
 			} catch (IllegalArgumentException e) {
 				throw new BucketNotFoundException();
 			}

@@ -24,6 +24,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 
 import net.derquinse.common.base.ByteString;
+import net.derquinse.common.io.MemoryByteSource;
+import net.derquinse.common.io.MemoryByteSourceLoader;
 
 import com.google.common.base.Optional;
 import com.google.common.base.Predicates;
@@ -32,44 +34,39 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.io.ByteSource;
 import com.google.common.util.concurrent.UncheckedExecutionException;
 
 /**
  * Abstract base class for Guava-cache-based bocas buckets.
  * @author Andres Rodriguez.
  */
-abstract class AbstractGuavaCachingBocas<K> extends SkeletalBocas {
+abstract class AbstractGuavaCachingBocas<K> extends AbstractMemoryBocas {
 	/** Cached bucket. */
 	private final Bocas bocas;
 	/** Entry Cache. */
-	private final Cache<K, LoadedBocasValue> cache;
-	/** Whether the cache is direct. */
-	private final boolean direct;
+	private final Cache<K, MemoryByteSource> cache;
 	/** Whether writes are always performed. */
 	private final boolean alwaysWrite;
 
 	/** Constructor. */
-	AbstractGuavaCachingBocas(Bocas bocas, Cache<K, LoadedBocasValue> cache, boolean direct, boolean alwaysWrite) {
-		this.bocas = checkNotNull(bocas, "The bucket to cache must be provided");
+	AbstractGuavaCachingBocas(Bocas bocas, MemoryByteSourceLoader loader, Cache<K, MemoryByteSource> cache,
+			boolean alwaysWrite) {
+		super(checkNotNull(bocas, "The bucket to cache must be provided").getHashFunction(), loader);
+		this.bocas = bocas;
 		this.cache = checkNotNull(cache, "The cache to use must be provided");
-		this.direct = direct;
 		this.alwaysWrite = alwaysWrite;
 	}
 
-	@Override
-	protected final LoadedBocasValue load(BocasValue value) {
-		return direct ? value.toDirect() : value.toHeap();
-	}
-
-	final LoadedBocasValue loadFromSource(ByteString key) {
-		Optional<BocasValue> v = bocas.get(key);
+	final MemoryByteSource loadFromSource(ByteString key) {
+		Optional<ByteSource> v = bocas.get(key);
 		if (v.isPresent()) {
-			return load(v.get());
+			return transform(v.get());
 		}
 		throw new EntryNotFoundException();
 	}
 
-	abstract Callable<LoadedBocasValue> getLoader(K internalKey);
+	abstract Callable<MemoryByteSource> getLoader(K internalKey);
 
 	abstract K toInternalKey(ByteString key);
 
@@ -79,7 +76,7 @@ abstract class AbstractGuavaCachingBocas<K> extends SkeletalBocas {
 
 	abstract Set<ByteString> toKeySet(Set<K> internalKeys);
 
-	abstract <V extends BocasValue> Map<K, V> toInternalEntryMap(Map<ByteString, V> entries);
+	abstract Map<K, MemoryByteSource> toInternalEntryMap(Map<ByteString, MemoryByteSource> entries);
 
 	/*
 	 * (non-Javadoc)
@@ -128,10 +125,10 @@ abstract class AbstractGuavaCachingBocas<K> extends SkeletalBocas {
 	 * @see net.derquinse.bocas.Bocas#get(net.derquinse.common.base.ByteString)
 	 */
 	@Override
-	public final Optional<BocasValue> get(ByteString key) {
+	public final Optional<ByteSource> get(ByteString key) {
 		try {
 			K internalKey = toInternalKey(key);
-			BocasValue v = cache.get(internalKey, getLoader(internalKey));
+			ByteSource v = cache.get(internalKey, getLoader(internalKey));
 			return Optional.of(v);
 		} catch (UncheckedExecutionException e) {
 			Throwable cause = e.getCause();
@@ -152,27 +149,27 @@ abstract class AbstractGuavaCachingBocas<K> extends SkeletalBocas {
 	 * @see net.derquinse.bocas.Bocas#get(java.lang.Iterable)
 	 */
 	@Override
-	public final Map<ByteString, BocasValue> get(Iterable<ByteString> keys) {
+	public final Map<ByteString, ByteSource> get(Iterable<ByteString> keys) {
 		Set<K> ikRequested = toInternalKeySet(keys);
 		if (ikRequested.isEmpty()) {
 			return ImmutableMap.of();
 		}
-		Map<ByteString, BocasValue> found = Maps.newHashMapWithExpectedSize(ikRequested.size());
+		Map<ByteString, ByteSource> found = Maps.newHashMapWithExpectedSize(ikRequested.size());
 		Set<ByteString> notCached = Sets.newHashSetWithExpectedSize(ikRequested.size());
 		for (K internalKey : ikRequested) {
 			ByteString key = toKey(internalKey);
-			BocasValue value = cache.getIfPresent(internalKey);
+			ByteSource value = cache.getIfPresent(internalKey);
 			if (value != null) {
 				found.put(key, value);
 			} else {
 				notCached.add(key);
 			}
 		}
-		Map<ByteString, BocasValue> foundNotCached = bocas.get(notCached);
-		for (Entry<ByteString, BocasValue> e : foundNotCached.entrySet()) {
+		Map<ByteString, ByteSource> foundNotCached = bocas.get(notCached);
+		for (Entry<ByteString, ByteSource> e : foundNotCached.entrySet()) {
 			ByteString key = e.getKey();
 			K internalKey = toInternalKey(key);
-			LoadedBocasValue value = load(e.getValue());
+			MemoryByteSource value = transform(e.getValue());
 			cache.put(internalKey, value);
 			found.put(key, value);
 		}
@@ -182,10 +179,10 @@ abstract class AbstractGuavaCachingBocas<K> extends SkeletalBocas {
 	/*
 	 * (non-Javadoc)
 	 * @see net.derquinse.bocas.SkeletalBocas#put(net.derquinse.common.base.ByteString,
-	 * net.derquinse.bocas.LoadedBocasValue)
+	 * com.google.common.io.ByteSource)
 	 */
 	@Override
-	protected void put(ByteString key, LoadedBocasValue value) {
+	protected void put(ByteString key, MemoryByteSource value) {
 		if (alwaysWrite) {
 			bocas.put(value);
 		}
@@ -204,12 +201,12 @@ abstract class AbstractGuavaCachingBocas<K> extends SkeletalBocas {
 	 * @see net.derquinse.bocas.SkeletalBocas#putAll(java.util.Map)
 	 */
 	@Override
-	protected void putAll(Map<ByteString, LoadedBocasValue> entries) {
+	protected void putAll(Map<ByteString, MemoryByteSource> entries) {
 		if (alwaysWrite) {
 			bocas.putAll(entries.values());
 		}
-		final Map<K, LoadedBocasValue> map = cache.asMap();
-		final Map<K, LoadedBocasValue> notCached = Maps.filterKeys(toInternalEntryMap(entries),
+		final Map<K, MemoryByteSource> map = cache.asMap();
+		final Map<K, MemoryByteSource> notCached = Maps.filterKeys(toInternalEntryMap(entries),
 				Predicates.not(Predicates.in(map.keySet())));
 		if (notCached.isEmpty()) {
 			return;

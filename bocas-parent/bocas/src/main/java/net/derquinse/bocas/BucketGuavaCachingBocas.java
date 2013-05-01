@@ -21,6 +21,8 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 
 import net.derquinse.common.base.ByteString;
+import net.derquinse.common.io.MemoryByteSource;
+import net.derquinse.common.io.MemoryByteSourceLoader;
 
 import com.google.common.cache.Cache;
 import com.google.common.collect.Maps;
@@ -32,15 +34,16 @@ import com.google.common.collect.Sets;
  */
 final class BucketGuavaCachingBocas extends AbstractGuavaCachingBocas<BucketKey> {
 	/** Constructor. */
-	BucketGuavaCachingBocas(Bocas bocas, Cache<BucketKey, LoadedBocasValue> cache, boolean direct, boolean alwaysWrite) {
-		super(bocas, cache, direct, alwaysWrite);
+	BucketGuavaCachingBocas(Bocas bocas, MemoryByteSourceLoader loader, Cache<BucketKey, MemoryByteSource> cache,
+			boolean alwaysWrite) {
+		super(bocas, loader, cache, alwaysWrite);
 	}
 
 	@Override
-	Callable<LoadedBocasValue> getLoader(final BucketKey internalKey) {
-		return new Callable<LoadedBocasValue>() {
+	Callable<MemoryByteSource> getLoader(final BucketKey internalKey) {
+		return new Callable<MemoryByteSource>() {
 			@Override
-			public LoadedBocasValue call() throws Exception {
+			public MemoryByteSource call() throws Exception {
 				return loadFromSource(internalKey.getKey());
 			}
 		};
@@ -70,9 +73,9 @@ final class BucketGuavaCachingBocas extends AbstractGuavaCachingBocas<BucketKey>
 		return set;
 	}
 
-	<V extends BocasValue> Map<BucketKey, V> toInternalEntryMap(Map<ByteString, V> entries) {
-		final Map<BucketKey, V> map = Maps.newHashMapWithExpectedSize(entries.size());
-		for (Entry<ByteString, V> entry : entries.entrySet()) {
+	Map<BucketKey, MemoryByteSource> toInternalEntryMap(Map<ByteString, MemoryByteSource> entries) {
+		final Map<BucketKey, MemoryByteSource> map = Maps.newHashMapWithExpectedSize(entries.size());
+		for (Entry<ByteString, MemoryByteSource> entry : entries.entrySet()) {
 			map.put(new BucketKey(this, entry.getKey()), entry.getValue());
 		}
 		return map;

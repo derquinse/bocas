@@ -15,6 +15,10 @@
  */
 package net.derquinse.bocas;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static net.derquinse.bocas.InternalUtils.checkTransformedValue;
+import static net.derquinse.bocas.InternalUtils.checkValue;
+
 import java.util.List;
 import java.util.Map;
 
@@ -23,48 +27,68 @@ import net.derquinse.common.base.ByteString;
 import com.google.common.annotations.Beta;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
+import com.google.common.io.ByteSource;
 
 /**
  * Base class for bucket implementations.
  * @author Andres Rodriguez.
+ * @param <T> Value type.
  */
 @Beta
-public abstract class SkeletalBocas implements Bocas {
+public abstract class SkeletalBocas<T extends ByteSource> implements Bocas {
+	/** Hash function to use. */
+	private final BocasHashFunction function;
+
 	/** Constructor. */
-	protected SkeletalBocas() {
+	protected SkeletalBocas(BocasHashFunction function) {
+		this.function = checkNotNull(function, "The Bocas hash function to use must be provided");
 	}
 
-	/** Turns a bocas value into a loaded value of the correct type. */
-	protected abstract LoadedBocasValue load(BocasValue value);
+	/** Transforms a byte source before putting it. */
+	protected abstract T transform(ByteSource value);
+
+	/** Obtains the transformed value. */
+	private T transformed(ByteSource value) {
+		return checkTransformedValue(transform(checkValue(value)));
+	}
 
 	/*
 	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#put(net.derquinse.bocas.BocasValue)
+	 * @see net.derquinse.bocas.Bocas#getHashFunction()
 	 */
 	@Override
-	public final ByteString put(BocasValue value) {
-		LoadedBocasValue loaded = load(value);
-		ByteString key = loaded.key();
-		put(key, loaded);
+	public final BocasHashFunction getHashFunction() {
+		return function;
+	}
+
+	/*
+	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.Bocas#put(com.google.common.io.ByteSource)
+	 */
+	@Override
+	public final ByteString put(ByteSource value) {
+		T finalValue = transformed(value);
+		ByteString key = function.hash(finalValue);
+		put(key, finalValue);
 		return key;
 	}
 
 	/** Puts an entry into the bucket. */
-	protected abstract void put(ByteString key, LoadedBocasValue value);
+	protected abstract void put(ByteString key, T value);
 
 	/*
 	 * (non-Javadoc)
 	 * @see net.derquinse.bocas.Bocas#putAll(java.lang.Iterable)
 	 */
 	@Override
-	public final List<ByteString> putAll(Iterable<? extends BocasValue> values) {
+	public final List<ByteString> putAll(Iterable<? extends ByteSource> values) {
 		final ImmutableList.Builder<ByteString> keys = ImmutableList.builder();
-		final Map<ByteString, LoadedBocasValue> entries = Maps.newHashMap();
-		for (BocasValue value : values) {
-			LoadedBocasValue loaded = load(value);
-			ByteString key = loaded.key();
+		final Map<ByteString, T> entries = Maps.newHashMap();
+		for (ByteSource value : values) {
+			T finalValue = transformed(value);
+			ByteString key = function.hash(finalValue);
 			keys.add(key);
-			entries.put(key, loaded);
+			entries.put(key, finalValue);
 		}
 		if (!entries.isEmpty()) {
 			putAll(entries);
@@ -73,6 +97,6 @@ public abstract class SkeletalBocas implements Bocas {
 	}
 
 	/** Puts a collection of entries into the bucket. */
-	protected abstract void putAll(Map<ByteString, LoadedBocasValue> entries);
+	protected abstract void putAll(Map<ByteString, T> entries);
 
 }

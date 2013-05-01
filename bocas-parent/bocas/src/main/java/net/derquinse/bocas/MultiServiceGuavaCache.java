@@ -16,7 +16,10 @@
 package net.derquinse.bocas;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static net.derquinse.bocas.InternalUtils.checkLoader;
 import net.derquinse.common.base.ByteString;
+import net.derquinse.common.io.MemoryByteSource;
+import net.derquinse.common.io.MemoryByteSourceLoader;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -29,17 +32,17 @@ import com.google.common.cache.LoadingCache;
  * @author Andres Rodriguez.
  */
 public final class MultiServiceGuavaCache {
-	/** Whether the cache is direct. */
-	private final boolean direct;
+	/** Memory loader to use. */
+	private final MemoryByteSourceLoader loader;
 	/** Shared cache. */
-	private final Cache<ByteString, LoadedBocasValue> cache;
+	private final Cache<ByteString, MemoryByteSource> cache;
 	/** Service cache. */
 	private final LoadingCache<BocasService, Service> serviceCache = CacheBuilder.newBuilder().weakKeys()
 			.build(new ServiceLoader());
 
 	/** Constructor. */
-	MultiServiceGuavaCache(boolean direct, Cache<ByteString, LoadedBocasValue> cache) {
-		this.direct = direct;
+	MultiServiceGuavaCache(MemoryByteSourceLoader loader, Cache<ByteString, MemoryByteSource> cache) {
+		this.loader = checkLoader(loader);
 		this.cache = checkNotNull(cache);
 	}
 
@@ -71,7 +74,7 @@ public final class MultiServiceGuavaCache {
 		private final class BucketLoader extends CacheLoader<String, Bocas> {
 			@Override
 			public Bocas load(String key) throws Exception {
-				return new SharedGuavaCachingBocas(service.getBucket(key), cache, direct, true);
+				return new SharedGuavaCachingBocas(service.getBucket(key), loader, cache, true);
 			}
 		}
 

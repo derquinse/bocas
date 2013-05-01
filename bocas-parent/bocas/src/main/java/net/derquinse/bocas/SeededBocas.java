@@ -29,10 +29,11 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.io.ByteSource;
 
 /**
- * A Bocas transformer that fetches entries missing in the primary repository from the provided seed.
- * Closing is a no-op.
+ * A Bocas transformer that fetches entries missing in the primary repository from the provided
+ * seed. Closing is a no-op.
  * @author Andres Rodriguez.
  */
 @Beta
@@ -53,7 +54,7 @@ final class SeededBocas extends ForwardingBocas {
 	protected Bocas delegate() {
 		return primary;
 	}
-	
+
 	/** Transforms a collection of keys into a set. */
 	private Set<ByteString> getRequested(Iterable<ByteString> keys) {
 		final Set<ByteString> requested;
@@ -64,7 +65,7 @@ final class SeededBocas extends ForwardingBocas {
 		}
 		return requested;
 	}
-	
+
 	/*
 	 * (non-Javadoc)
 	 * @see net.derquinse.bocas.ForwardingBocas#close()
@@ -110,8 +111,8 @@ final class SeededBocas extends ForwardingBocas {
 	 * @see net.derquinse.bocas.Bocas#get(net.derquinse.common.base.ByteString)
 	 */
 	@Override
-	public Optional<BocasValue> get(ByteString key) {
-		Optional<BocasValue> p = primary.get(key);
+	public Optional<ByteSource> get(ByteString key) {
+		Optional<ByteSource> p = primary.get(key);
 		if (p.isPresent()) {
 			return p;
 		} else {
@@ -124,21 +125,21 @@ final class SeededBocas extends ForwardingBocas {
 	 * @see net.derquinse.bocas.Bocas#get(java.lang.Iterable)
 	 */
 	@Override
-	public Map<ByteString, BocasValue> get(Iterable<ByteString> keys) {
+	public Map<ByteString, ByteSource> get(Iterable<ByteString> keys) {
 		final Set<ByteString> requested = getRequested(keys);
 		if (requested.isEmpty()) {
 			return ImmutableMap.of();
 		}
-		Map<ByteString, BocasValue> inPrimary = primary.get(requested);
+		Map<ByteString, ByteSource> inPrimary = primary.get(requested);
 		Set<ByteString> askFallback = Sets.difference(requested, inPrimary.keySet()).immutableCopy();
 		if (askFallback.isEmpty()) {
 			return inPrimary;
 		}
-		Map<ByteString, BocasValue> inSecondary = seed.get(askFallback);
+		Map<ByteString, ByteSource> inSecondary = seed.get(askFallback);
 		if (inSecondary.isEmpty()) {
 			return inPrimary;
 		}
-		Map<ByteString, BocasValue> total = Maps.newHashMap(inPrimary);
+		Map<ByteString, ByteSource> total = Maps.newHashMap(inPrimary);
 		total.putAll(inSecondary);
 		return total;
 	}

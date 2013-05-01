@@ -16,6 +16,7 @@
 package net.derquinse.bocas;
 
 import net.derquinse.common.base.NotInstantiable;
+import net.derquinse.common.io.MemoryByteSourceLoader;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Predicate;
@@ -29,14 +30,14 @@ public final class BocasServices extends NotInstantiable {
 	private BocasServices() {
 	}
 
-	/** Creates a new heap-based bucket. */
-	public static Bocas memoryBucket() {
-		return new MemoryBocas();
-	}
-
-	/** Creates a new memory-based bucket based on direct buffers. */
-	public static Bocas directBucket() {
-		return new DirectMemoryBocas();
+	/**
+	 * Creates a new memory based bucket.
+	 * @param function Hash function to use.
+	 * @param loader Memory loader to use.
+	 * @return
+	 */
+	public static Bocas memoryBucket(BocasHashFunction function, MemoryByteSourceLoader loader) {
+		return new MemoryBocas(function, loader);
 	}
 
 	/** Creates a new caching repository builder. */

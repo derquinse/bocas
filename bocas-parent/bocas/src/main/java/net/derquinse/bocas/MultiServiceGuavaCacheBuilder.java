@@ -16,10 +16,13 @@
 package net.derquinse.bocas;
 
 import static com.google.common.base.Preconditions.checkState;
+import static net.derquinse.bocas.InternalUtils.checkLoader;
 
 import java.util.concurrent.TimeUnit;
 
 import net.derquinse.common.base.ByteString;
+import net.derquinse.common.io.MemoryByteSource;
+import net.derquinse.common.io.MemoryByteSourceLoader;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
@@ -31,8 +34,8 @@ import com.google.common.cache.CacheBuilder;
 public final class MultiServiceGuavaCacheBuilder {
 	/** Whether the service has already been built. */
 	private boolean built = false;
-	/** Whether the cache is direct. */
-	private boolean direct = false;
+	/** Memory loader to use. */
+	private MemoryByteSourceLoader loader = MemoryByteSourceLoader.get();
 	/** Internal builder. */
 	private final CacheBuilder<Object, Object> builder = CacheBuilder.newBuilder().recordStats();
 
@@ -105,12 +108,12 @@ public final class MultiServiceGuavaCacheBuilder {
 	}
 
 	/**
-	 * Specifies the cache will use direct values.
+	 * Specifies the memory loader tu use.
 	 * @throws IllegalStateException if the service has already been built
 	 */
-	public MultiServiceGuavaCacheBuilder direct() {
+	public MultiServiceGuavaCacheBuilder loader(MemoryByteSourceLoader loader) {
 		checkNotBuilt();
-		this.direct = true;
+		this.loader = checkLoader(loader);
 		return this;
 	}
 
@@ -121,11 +124,8 @@ public final class MultiServiceGuavaCacheBuilder {
 	public MultiServiceGuavaCache build() {
 		checkNotBuilt();
 		built = true;
-		if (direct) {
-			builder.softValues();
-		}
-		Cache<ByteString, LoadedBocasValue> cache = builder.build();
-		return new MultiServiceGuavaCache(direct, cache);
+		Cache<ByteString, MemoryByteSource> cache = builder.build();
+		return new MultiServiceGuavaCache(loader, cache);
 	}
 
 }

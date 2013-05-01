@@ -15,111 +15,37 @@
  */
 package net.derquinse.bocas;
 
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
+import static net.derquinse.bocas.InternalUtils.checkLoader;
 
-import net.derquinse.common.base.ByteString;
+import java.io.IOException;
+
+import net.derquinse.common.io.MemoryByteSource;
+import net.derquinse.common.io.MemoryByteSourceLoader;
 
 import com.google.common.annotations.Beta;
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.MapMaker;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
+import com.google.common.io.ByteSource;
 
 /**
- * Abstract class for memory-based bocas bucket.
+ * Abstract class for memory-based bocas buckets.
  * @author Andres Rodriguez.
  */
 @Beta
-abstract class AbstractMemoryBocas extends SkeletalBocas {
-	/** Repository. */
-	private final ConcurrentMap<ByteString, LoadedBocasValue> bucket = new MapMaker().makeMap();
+abstract class AbstractMemoryBocas extends SkeletalBocas<MemoryByteSource> {
+	/** Memory loader to use. */
+	private final MemoryByteSourceLoader loader;
 
 	/** Constructor. */
-	AbstractMemoryBocas() {
+	AbstractMemoryBocas(BocasHashFunction function, MemoryByteSourceLoader loader) {
+		super(function);
+		this.loader = checkLoader(loader);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#close()
-	 */
 	@Override
-	public void close() {
-		// Nothing to do.
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#contains(net.derquinse.common.base.ByteString)
-	 */
-	@Override
-	public final boolean contains(ByteString key) {
-		return bucket.containsKey(key);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#contained(java.lang.Iterable)
-	 */
-	@Override
-	public final Set<ByteString> contained(Iterable<ByteString> keys) {
-		final Set<ByteString> requested;
-		if (keys instanceof Set) {
-			requested = (Set<ByteString>) keys;
-		} else {
-			requested = Sets.newHashSet(keys);
+	protected final MemoryByteSource transform(ByteSource value) {
+		try {
+			return loader.load(value);
+		} catch (IOException e) {
+			throw new BocasException(e);
 		}
-		if (requested.isEmpty()) {
-			return ImmutableSet.of();
-		}
-		return Sets.intersection(requested, bucket.keySet()).immutableCopy();
 	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#get(net.derquinse.common.base.ByteString)
-	 */
-	@Override
-	public final Optional<BocasValue> get(ByteString key) {
-		BocasValue value = bucket.get(key);
-		return Optional.fromNullable(value);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#get(java.lang.Iterable)
-	 */
-	@Override
-	public final Map<ByteString, BocasValue> get(Iterable<ByteString> keys) {
-		Map<ByteString, BocasValue> map = Maps.newHashMap();
-		for (ByteString key : keys) {
-			BocasValue value = bucket.get(key);
-			if (value != null) {
-				map.put(key, value);
-			}
-		}
-		return map;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.SkeletalBocas#put(net.derquinse.common.base.ByteString,
-	 * net.derquinse.bocas.LoadedBocasValue)
-	 */
-	@Override
-	protected void put(ByteString key, LoadedBocasValue value) {
-		bucket.putIfAbsent(key, value);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.SkeletalBocas#putAll(java.util.Map)
-	 */
-	@Override
-	protected void putAll(Map<ByteString, LoadedBocasValue> entries) {
-		bucket.putAll(entries);
-	}
-
 }

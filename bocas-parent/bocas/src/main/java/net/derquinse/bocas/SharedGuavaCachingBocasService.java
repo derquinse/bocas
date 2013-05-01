@@ -16,6 +16,7 @@
 package net.derquinse.bocas;
 
 import net.derquinse.common.base.ByteString;
+import net.derquinse.common.io.MemoryByteSourceLoader;
 
 import com.google.common.cache.CacheBuilder;
 
@@ -25,12 +26,12 @@ import com.google.common.cache.CacheBuilder;
  */
 final class SharedGuavaCachingBocasService extends AbstractGuavaCachingBocasService<ByteString> {
 	/** Constructor. */
-	SharedGuavaCachingBocasService(BocasService service, CacheBuilder<Object, Object> builder, boolean direct,
-			boolean alwaysWrite) {
-		super(service, builder, direct, alwaysWrite);
+	SharedGuavaCachingBocasService(BocasService service, MemoryByteSourceLoader loader,
+			CacheBuilder<Object, Object> builder, boolean alwaysWrite) {
+		super(service, loader, builder, alwaysWrite);
 	}
 
-	SharedGuavaCachingBocas createBucket(Bocas source) {
-		return new SharedGuavaCachingBocas(source, getCache(), isDirect(), isAlwaysWrite());
+	SharedGuavaCachingBocas createBucket(Bocas source, MemoryByteSourceLoader loader) {
+		return new SharedGuavaCachingBocas(source, loader, getCache(), isAlwaysWrite());
 	}
 }
