@@ -16,6 +16,7 @@
 package net.derquinse.bocas.gcs;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static net.derquinse.bocas.BocasPreconditions.checkLoader;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,10 +26,11 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import net.derquinse.bocas.BocasException;
-import net.derquinse.bocas.BocasValue;
-import net.derquinse.bocas.LoadedBocasValue;
-import net.derquinse.bocas.SkeletalBocas;
+import net.derquinse.bocas.BocasHashFunction;
+import net.derquinse.bocas.SimpleSkeletalBocas;
 import net.derquinse.common.base.ByteString;
+import net.derquinse.common.io.MemoryByteSource;
+import net.derquinse.common.io.MemoryByteSourceLoader;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -47,14 +49,17 @@ import com.google.common.annotations.Beta;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.io.ByteSource;
 import com.google.common.io.Closeables;
+import com.google.common.io.Closer;
+import com.google.common.primitives.Ints;
 
 /**
  * A bocas bucket based on Google Cloud Storage.
  * @author Andres Rodriguez.
  */
 @Beta
-final class GCSBucket extends SkeletalBocas {
+final class GCSBucket extends SimpleSkeletalBocas {
 	/** Date formatter. */
 	private static final DateTimeFormatter RFC1123_DATE_FORMAT = DateTimeFormat
 			.forPattern("EEE, dd MMM yyyy HH:mm:ss 'GMT'").withLocale(Locale.US).withZone(DateTimeZone.UTC);
@@ -63,6 +68,8 @@ final class GCSBucket extends SkeletalBocas {
 	private final HttpRequestFactory requestFactory;
 	/** Bucket URI (must not end in a slash). */
 	private final String bucketURI;
+	/** Memory loader to use. */
+	private final MemoryByteSourceLoader loader;
 
 	private static void checkKey(ByteString key) {
 		checkNotNull(key, "The object key must be provided");
@@ -79,9 +86,12 @@ final class GCSBucket extends SkeletalBocas {
 	}
 
 	/** Constructor. */
-	GCSBucket(HttpRequestFactory requestFactory, String bucketURI) {
+	GCSBucket(HttpRequestFactory requestFactory, String bucketURI, BocasHashFunction function,
+			MemoryByteSourceLoader loader) {
+		super(function);
 		this.requestFactory = checkNotNull(requestFactory);
 		this.bucketURI = checkNotNull(bucketURI);
+		this.loader = checkLoader(loader);
 	}
 
 	private GenericUrl getObjectURI(ByteString key) {
@@ -98,15 +108,6 @@ final class GCSBucket extends SkeletalBocas {
 			headers.setContentType("application/octet-stream");
 		}
 		return request;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.SkeletalBocas#load(net.derquinse.bocas.BocasValue)
-	 */
-	@Override
-	protected LoadedBocasValue load(BocasValue value) {
-		return value.toLoaded();
 	}
 
 	/*
@@ -164,7 +165,7 @@ final class GCSBucket extends SkeletalBocas {
 	 * @see net.derquinse.bocas.Bocas#get(net.derquinse.common.base.ByteString)
 	 */
 	@Override
-	public Optional<BocasValue> get(ByteString key) {
+	public Optional<ByteSource> get(ByteString key) {
 		checkKey(key);
 		try {
 			HttpRequest request = decorate(requestFactory.buildGetRequest(getObjectURI(key)), null);
@@ -175,8 +176,10 @@ final class GCSBucket extends SkeletalBocas {
 					if (is == null) {
 						return Optional.absent();
 					}
+					Closer closer = Closer.create();
 					try {
-						return Optional.of((BocasValue) BocasValue.heap(is));
+						ByteSource value = loader.load(closer.register(is));
+						return Optional.of(value);
 					} finally {
 						Closeables.closeQuietly(is);
 					}
@@ -200,13 +203,13 @@ final class GCSBucket extends SkeletalBocas {
 	 * @see net.derquinse.bocas.Bocas#get(java.lang.Iterable)
 	 */
 	@Override
-	public Map<ByteString, BocasValue> get(final Iterable<ByteString> keys) {
+	public Map<ByteString, ByteSource> get(final Iterable<ByteString> keys) {
 		Set<ByteString> input = checkKeys(keys);
-		Map<ByteString, BocasValue> map = Maps.newHashMap();
+		Map<ByteString, ByteSource> map = Maps.newHashMap();
 		for (ByteString key : input) {
 			checkKey(key);
 			if (!map.containsKey(key)) {
-				Optional<BocasValue> v = get(key);
+				Optional<ByteSource> v = get(key);
 				if (v.isPresent()) {
 					map.put(key, v.get());
 				}
@@ -215,16 +218,18 @@ final class GCSBucket extends SkeletalBocas {
 		return map;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.SkeletalBocas#put(net.derquinse.common.base.ByteString,
-	 * net.derquinse.bocas.LoadedBocasValue)
-	 */
 	@Override
-	protected void put(final ByteString key, final LoadedBocasValue value) {
+	protected void put(final ByteString key, final ByteSource value) {
 		try {
-			HttpContent content = new InputStreamContent("application/octet-stream", value.getInput());
-			HttpRequest request = decorate(requestFactory.buildPutRequest(getObjectURI(key), content), value.getSize());
+			final MemoryByteSource mbs;
+			if (value instanceof MemoryByteSource) {
+				mbs = (MemoryByteSource) value;
+			} else {
+				mbs = loader.load(value);
+			}
+			HttpContent content = new InputStreamContent("application/octet-stream", mbs.openStream());
+			HttpRequest request = decorate(requestFactory.buildPutRequest(getObjectURI(key), content),
+					Ints.saturatedCast(mbs.size()));
 			request.execute();
 		} catch (IOException e) {
 			throw new BocasException(e);
@@ -236,8 +241,8 @@ final class GCSBucket extends SkeletalBocas {
 	 * @see net.derquinse.bocas.SkeletalBocas#putAll(java.util.Map)
 	 */
 	@Override
-	protected void putAll(final Map<ByteString, LoadedBocasValue> entries) {
-		for (Entry<ByteString, LoadedBocasValue> entry : entries.entrySet()) {
+	protected void putAll(final Map<ByteString, ByteSource> entries) {
+		for (Entry<ByteString, ByteSource> entry : entries.entrySet()) {
 			put(entry.getKey(), entry.getValue());
 		}
 	}

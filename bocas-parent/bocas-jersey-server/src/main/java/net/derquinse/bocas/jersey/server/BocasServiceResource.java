@@ -16,6 +16,7 @@
 package net.derquinse.bocas.jersey.server;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static net.derquinse.bocas.BocasPreconditions.checkLoader;
 
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -23,6 +24,7 @@ import javax.ws.rs.WebApplicationException;
 
 import net.derquinse.bocas.Bocas;
 import net.derquinse.bocas.BocasService;
+import net.derquinse.common.io.MemoryByteSourceLoader;
 
 import com.sun.jersey.api.NotFoundException;
 
@@ -34,14 +36,17 @@ import com.sun.jersey.api.NotFoundException;
 public class BocasServiceResource {
 	/** Repository. */
 	private final BocasService repository;
+	/** Memory loader to use. */
+	private final MemoryByteSourceLoader loader;
 
 	private static WebApplicationException notFound() {
 		throw new NotFoundException();
 	}
 
 	/** Constructor. */
-	public BocasServiceResource(BocasService repository) {
+	public BocasServiceResource(BocasService repository, MemoryByteSourceLoader loader) {
 		this.repository = checkNotNull(repository);
+		this.loader = checkLoader(loader);
 	}
 
 	/** @see BocasService#getBucket(String) */
@@ -53,6 +58,6 @@ public class BocasServiceResource {
 		} catch (IllegalArgumentException e) {
 			throw notFound();
 		}
-		return new BocasResource(bucket);
+		return new BocasResource(bucket, loader);
 	}
 }

@@ -16,7 +16,7 @@
 package net.derquinse.bocas;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static net.derquinse.bocas.InternalUtils.checkLoader;
+import static net.derquinse.bocas.BocasPreconditions.checkLoader;
 import net.derquinse.common.base.ByteString;
 import net.derquinse.common.io.MemoryByteSource;
 import net.derquinse.common.io.MemoryByteSourceLoader;

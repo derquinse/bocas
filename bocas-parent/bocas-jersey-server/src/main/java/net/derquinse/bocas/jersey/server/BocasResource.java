@@ -16,9 +16,11 @@
 package net.derquinse.bocas.jersey.server;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static net.derquinse.bocas.BocasPreconditions.checkLoader;
 import static net.derquinse.bocas.jersey.BocasResources.iterable2String;
-import static net.derquinse.bocas.jersey.BocasResources.value2Output;
+import static net.derquinse.common.jaxrs.ByteSourceOutput.output;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.List;
@@ -35,22 +37,28 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.CacheControl;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.EntityTag;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.ResponseBuilder;
 import javax.ws.rs.core.Response.Status;
 
 import net.derquinse.bocas.Bocas;
 import net.derquinse.bocas.BocasException;
-import net.derquinse.bocas.BocasValue;
 import net.derquinse.bocas.jersey.BocasResources;
 import net.derquinse.common.base.ByteString;
+import net.derquinse.common.io.MemoryByteSource;
+import net.derquinse.common.io.MemoryByteSourceLoader;
 
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+import com.google.common.io.ByteSource;
 import com.sun.jersey.api.NotFoundException;
 import com.sun.jersey.multipart.BodyPart;
 import com.sun.jersey.multipart.FormDataMultiPart;
@@ -65,6 +73,8 @@ import com.sun.jersey.multipart.MultiPartMediaTypes;
 public class BocasResource {
 	/** Target bucket. */
 	private final Bocas bocas;
+	/** Memory loader to use. */
+	private final MemoryByteSourceLoader loader;
 
 	private static WebApplicationException notFound() {
 		throw new NotFoundException();
@@ -108,9 +118,11 @@ public class BocasResource {
 	/**
 	 * Constructor.
 	 * @param bocas Repository.
+	 * @param loader Memory loader to use.
 	 */
-	public BocasResource(Bocas bocas) {
+	public BocasResource(Bocas bocas, MemoryByteSourceLoader loader) {
 		this.bocas = checkNotNull(bocas, "The bocas repository must be provided");
+		this.loader = checkLoader(loader);
 	}
 
 	/** Bucket existance. */
@@ -120,29 +132,57 @@ public class BocasResource {
 		return Response.ok().build();
 	}
 
+	/** Bucket hash function. */
+	@GET
+	@Path(BocasResources.HASH)
+	@Produces(MediaType.TEXT_PLAIN)
+	public final String hash() {
+		return bocas.getHashFunction().name();
+	}
+
+	/** Transform an id path segment into a key. */
+	private ByteString getKey(String id) {
+		try {
+			return ByteString.fromHexString(id);
+		} catch (RuntimeException e) {
+			throw notFound();
+		}
+	}
+
+	/** Evaluate preconditions. */
+	private Response evaluate(Request request, ByteString key) {
+		ResponseBuilder b = request.evaluatePreconditions(new EntityTag(key.toHexString()));
+		if (b != null) {
+			return b.build();
+		}
+		return null;
+	}
+
 	/** @see Bocas#get(ByteString) */
 	@GET
 	@Path("{id}")
 	@Produces(MediaType.APPLICATION_OCTET_STREAM)
-	public final Response getObject(@PathParam("id") String id) {
-		ByteString key;
-		try {
-			key = ByteString.fromHexString(id);
-		} catch (RuntimeException e) {
-			throw notFound();
+	public final Response getObject(@Context Request request, @PathParam("id") String id) throws IOException {
+		ByteString key = getKey(id);
+		// Check preconditions
+		Response pre = evaluate(request, key);
+		if (pre != null) {
+			return pre;
 		}
-		Optional<BocasValue> optional = bocas.get(key);
+		// Get object.
+		Optional<ByteSource> optional = bocas.get(key);
 		if (!optional.isPresent()) {
 			throw notFound();
 		}
-		BocasValue value = optional.get();
-		ResponseBuilder b = Response.ok(value2Output(value), MediaType.APPLICATION_OCTET_STREAM);
-		Integer size = value.getSize();
-		if (size != null) {
-			b.header(HttpHeaders.CONTENT_LENGTH, size.toString());
+		ByteSource value = optional.get();
+		ResponseBuilder b = Response.ok(output(value), MediaType.APPLICATION_OCTET_STREAM).tag(
+				new EntityTag(key.toHexString()));
+		if (value instanceof MemoryByteSource) {
+			b.header(HttpHeaders.CONTENT_LENGTH, Long.toString(value.size()));
 		}
-		// TODO: cache control
-		return b.build();
+		CacheControl cc = new CacheControl();
+		cc.setMaxAge(15552000);
+		return b.cacheControl(cc).build();
 	}
 
 	/** @see Bocas#get(Iterable) */
@@ -150,14 +190,13 @@ public class BocasResource {
 		if (requested.isEmpty()) {
 			throw notFound();
 		}
-		Map<ByteString, BocasValue> found = bocas.get(requested);
+		Map<ByteString, ByteSource> found = bocas.get(requested);
 		if (found.isEmpty()) {
 			throw notFound();
 		}
 		FormDataMultiPart entity = new FormDataMultiPart();
-		for (Entry<ByteString, BocasValue> entry : found.entrySet()) {
-			entity.field(entry.getKey().toHexString(), value2Output(entry.getValue()),
-					MediaType.APPLICATION_OCTET_STREAM_TYPE);
+		for (Entry<ByteString, ByteSource> entry : found.entrySet()) {
+			entity.field(entry.getKey().toHexString(), output(entry.getValue()), MediaType.APPLICATION_OCTET_STREAM_TYPE);
 		}
 		return Response.ok(entity, MediaType.MULTIPART_FORM_DATA).build();
 	}
@@ -181,16 +220,19 @@ public class BocasResource {
 	@GET
 	@Produces(MediaType.TEXT_PLAIN)
 	@Path(BocasResources.CATALOG + "/{id}")
-	public final String containsObject(@PathParam("id") String id) {
-		ByteString key;
-		try {
-			key = ByteString.fromHexString(id);
-		} catch (RuntimeException e) {
-			throw notFound();
+	public final Response containsObject(@Context Request request, @PathParam("id") String id) {
+		ByteString key = getKey(id);
+		// Check preconditions
+		Response pre = evaluate(request, key);
+		if (pre != null) {
+			return pre;
 		}
+		// Check presence
 		if (bocas.contains(key)) {
-			return id;
-			// TODO: etag
+			ResponseBuilder b = Response.ok(key.toHexString(), MediaType.TEXT_PLAIN).tag(new EntityTag(key.toHexString()));
+			CacheControl cc = new CacheControl();
+			cc.setMaxAge(30);
+			return b.cacheControl(cc).build();
 		}
 		throw notFound();
 	}
@@ -224,12 +266,12 @@ public class BocasResource {
 		return containsObjects(setFromBody(keys));
 	}
 
-	/** @see Bocas#put(BocasValue) */
+	/** @see Bocas#put(ByteSource)) */
 	@POST
 	@Consumes(MediaType.APPLICATION_OCTET_STREAM)
 	@Produces(MediaType.TEXT_PLAIN)
-	public final Response putObject(InputStream stream) {
-		ByteString created = bocas.put(BocasValue.heap(stream));
+	public final Response putObject(InputStream stream) throws IOException {
+		ByteString created = bocas.put(loader.load(stream));
 		String key = created.toHexString();
 		return Response.created(URI.create(key)).entity(key).build();
 	}
@@ -238,11 +280,11 @@ public class BocasResource {
 	@POST
 	@Consumes(MultiPartMediaTypes.MULTIPART_MIXED)
 	@Produces(MediaType.TEXT_PLAIN)
-	public final Response putObjects(MultiPart entity) {
+	public final Response putObjects(MultiPart entity) throws IOException {
 		checkNotNull(entity);
-		List<BocasValue> list = Lists.newLinkedList();
+		List<ByteSource> list = Lists.newLinkedList();
 		for (BodyPart part : entity.getBodyParts()) {
-			list.add(BocasValue.heap(part.getEntityAs(InputStream.class)));
+			list.add(loader.load(part.getEntityAs(InputStream.class)));
 		}
 		List<ByteString> created = bocas.putAll(list);
 		if (created.isEmpty()) {

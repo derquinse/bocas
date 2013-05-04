@@ -13,19 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package net.derquinse.bocas.jersey.server;
+package net.derquinse.bocas;
 
-import javax.ws.rs.Path;
-
-import net.derquinse.common.io.MemoryByteSourceLoader;
+import com.google.common.io.ByteSource;
 
 /**
- * Integration test for Jersey Bocas service.
- * @author Andres Rodriguez
+ * Skeletal bucket implementation with no {@link ByteSource} transformation.
+ * @author Andres Rodriguez.
  */
-@Path("/")
-public class TestBocasResource extends BocasServiceResource {
-	public TestBocasResource() {
-		super(BocasJerseyTest.SERVER, MemoryByteSourceLoader.get());
+public abstract class SimpleSkeletalBocas extends SkeletalBocas<ByteSource> {
+	/** Constructor. */
+	protected SimpleSkeletalBocas(BocasHashFunction function) {
+		super(function);
+	}
+
+	@Override
+	protected final ByteSource transform(ByteSource value) {
+		return value;
 	}
 }

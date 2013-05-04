@@ -16,6 +16,7 @@
 package net.derquinse.bocas.jersey.client;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static net.derquinse.bocas.BocasPreconditions.checkLoader;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -28,18 +29,22 @@ import javax.ws.rs.core.MediaType;
 
 import net.derquinse.bocas.Bocas;
 import net.derquinse.bocas.BocasException;
-import net.derquinse.bocas.BocasValue;
+import net.derquinse.bocas.BocasHashFunction;
 import net.derquinse.bocas.jersey.BocasResources;
 import net.derquinse.common.base.ByteString;
+import net.derquinse.common.io.MemoryByteSource;
+import net.derquinse.common.io.MemoryByteSourceLoader;
 
+import com.google.common.base.CharMatcher;
 import com.google.common.base.Optional;
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.io.ByteStreams;
-import com.google.common.io.InputSupplier;
+import com.google.common.io.ByteSource;
+import com.google.common.io.Closer;
 import com.sun.jersey.api.client.ClientResponse.Status;
 import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.api.client.WebResource;
@@ -53,8 +58,13 @@ import com.sun.jersey.multipart.MultiPartMediaTypes;
  * @author Andres Rodriguez.
  */
 final class BocasClient implements Bocas {
+	/** Hash splitter. */
+	private static final Splitter HASH_SPLITTER = Splitter.on(CharMatcher.WHITESPACE).trimResults().omitEmptyStrings();
+
 	/** Bucket resource. */
 	private final WebResource resource;
+	/** Memory loader to use. */
+	private final MemoryByteSourceLoader loader;
 
 	private static ByteString checkKey(ByteString key) {
 		return checkNotNull(key, "The object key must be provided");
@@ -77,12 +87,30 @@ final class BocasClient implements Bocas {
 		return r;
 	}
 
-	BocasClient(WebResource resource) {
+	BocasClient(WebResource resource, MemoryByteSourceLoader loader) {
 		this.resource = checkNotNull(resource, "The bucket resource must be provided");
+		this.loader = checkLoader(loader);
 	}
 
 	private WebResource object(ByteString key) {
 		return object(resource, key);
+	}
+
+	@Override
+	public BocasHashFunction getHashFunction() {
+		try {
+			String result = resource.path(BocasResources.HASH).get(String.class);
+			if (result != null) {
+				List<String> split = Lists.newLinkedList(HASH_SPLITTER.split(result)); // TODO: change in
+																																								// guava 15
+				if (!split.isEmpty()) {
+					return BocasHashFunction.get(split.get(0));
+				}
+			}
+			throw new BocasException("Unable to get hash function");
+		} catch (UniformInterfaceException e) {
+			throw exception(e);
+		}
 	}
 
 	/*
@@ -132,23 +160,34 @@ final class BocasClient implements Bocas {
 		}
 	}
 
+	private MemoryByteSource load(InputStream is) throws IOException {
+		Closer closer = Closer.create();
+		try {
+			return loader.load(closer.register(is));
+		} finally {
+			closer.close();
+		}
+	}
+
 	/*
 	 * (non-Javadoc)
 	 * @see net.derquinse.bocas.Bocas#get(net.derquinse.common.base.ByteString)
 	 */
 	@Override
-	public Optional<BocasValue> get(ByteString key) {
+	public Optional<ByteSource> get(ByteString key) {
 		try {
-			final byte[] data = object(key).get(byte[].class);
+			final InputStream data = object(key).get(InputStream.class);
 			if (data == null) {
 				return Optional.absent();
 			}
-			BocasValue v = BocasValue.of(data);
+			ByteSource v = load(data);
 			return Optional.of(v);
 		} catch (UniformInterfaceException e) {
 			if (e.getResponse().getClientResponseStatus() == Status.NOT_FOUND) {
 				return Optional.absent();
 			}
+			throw exception(e);
+		} catch (IOException e) {
 			throw exception(e);
 		}
 	}
@@ -158,7 +197,7 @@ final class BocasClient implements Bocas {
 	 * @see net.derquinse.bocas.Bocas#get(java.lang.Iterable)
 	 */
 	@Override
-	public Map<ByteString, BocasValue> get(Iterable<ByteString> keys) {
+	public Map<ByteString, ByteSource> get(Iterable<ByteString> keys) {
 		MultiMethod m = new MultiMethod(resource, keys);
 		if (m.isEmpty()) {
 			return ImmutableMap.of();
@@ -168,16 +207,18 @@ final class BocasClient implements Bocas {
 			if (data == null) {
 				return ImmutableMap.of();
 			}
-			Map<ByteString, BocasValue> found = Maps.newHashMap();
+			Map<ByteString, ByteSource> found = Maps.newHashMap();
 			for (Entry<String, List<FormDataBodyPart>> entry : data.getFields().entrySet()) {
 				List<FormDataBodyPart> parts = entry.getValue();
 				if (parts != null && !parts.isEmpty()) {
 					try {
 						ByteString key = ByteString.fromHexString(entry.getKey());
-						BocasValue v = BocasValue.of(parts.get(0).getEntityAs(byte[].class));
+						ByteSource v = load(parts.get(0).getEntityAs(InputStream.class));
 						found.put(key, v);
 					} catch (BocasException e) {
 						throw e;
+					} catch (IOException e) {
+						throw exception(e);
 					} catch (RuntimeException e) {
 						// ignore result
 					}
@@ -192,9 +233,14 @@ final class BocasClient implements Bocas {
 		}
 	}
 
-	private ByteString put(byte[] object) {
+	/*
+	 * (non-Javadoc)
+	 * @see net.derquinse.bocas.Bocas#put(com.google.common.io.ByteSource)
+	 */
+	@Override
+	public ByteString put(ByteSource value) {
 		try {
-			String response = resource.entity(object, MediaType.APPLICATION_OCTET_STREAM_TYPE).post(String.class);
+			String response = resource.entity(checkValue(value), MediaType.APPLICATION_OCTET_STREAM_TYPE).post(String.class);
 			List<ByteString> list = BocasResources.response2List(response);
 			if (list.size() != 1) {
 				throw new BocasException("Unexpected response");
@@ -207,40 +253,19 @@ final class BocasClient implements Bocas {
 
 	/*
 	 * (non-Javadoc)
-	 * @see net.derquinse.bocas.Bocas#put(net.derquinse.bocas.BocasValue)
+	 * @see net.derquinse.bocas.Bocas#putAll(java.lang.Iterable)
 	 */
 	@Override
-	public ByteString put(BocasValue value) {
-		try {
-			return put(ByteStreams.toByteArray(checkValue(value)));
-		} catch (IOException e) {
-			throw exception(e);
-		}
-	}
-
-	private List<ByteString> put(List<byte[]> objects) {
+	public List<ByteString> putAll(Iterable<? extends ByteSource> values) {
+		checkValues(values);
 		try {
 			MultiPart multipart = new MultiPart();
-			for (byte[] object : objects) {
+			for (ByteSource object : values) {
 				multipart.bodyPart(object, MediaType.APPLICATION_OCTET_STREAM_TYPE);
 			}
 			String response = resource.entity(multipart, MultiPartMediaTypes.MULTIPART_MIXED_TYPE).post(String.class);
 			return BocasResources.response2List(response);
 		} catch (UniformInterfaceException e) {
-			throw exception(e);
-		}
-	}
-
-	@Override
-	public List<ByteString> putAll(Iterable<? extends BocasValue> values) {
-		checkValues(values);
-		try {
-			List<byte[]> arrays = Lists.newLinkedList();
-			for (InputSupplier<? extends InputStream> value : values) {
-				arrays.add(ByteStreams.toByteArray(checkValue(value)));
-			}
-			return put(arrays);
-		} catch (IOException e) {
 			throw exception(e);
 		}
 	}

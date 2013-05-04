@@ -19,25 +19,31 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 import net.derquinse.bocas.Bocas;
 import net.derquinse.bocas.BocasExerciser;
+import net.derquinse.bocas.BocasHashFunction;
 import net.derquinse.bocas.BocasService;
-import net.derquinse.bocas.BocasValue;
-import net.derquinse.bocas.LoadedBocasValue;
+import net.derquinse.common.base.ByteString;
+import net.derquinse.common.io.MemoryByteSource;
+import net.derquinse.common.io.MemoryByteSourceLoader;
 
 import org.testng.annotations.Test;
 
 import com.google.common.base.Optional;
+import com.google.common.io.ByteSource;
 
 /**
  * Test for GCSBocas.
  * @author Andres Rodriguez.
  */
 public class GCSBocasTest {
+	private final BocasHashFunction f = BocasHashFunction.sha256();
+	@SuppressWarnings("unused")
+	private final MemoryByteSourceLoader loader = MemoryByteSourceLoader.get();
 	private final BocasService service;
 
 	public GCSBocasTest() throws Exception {
 		// String email = "";
 		// File p12 = new File("");
-		// service = GCSBocas.service(email, p12);
+		// service = GCSBocas.service(email, p12, f, loader);
 		service = null;
 	}
 
@@ -47,14 +53,15 @@ public class GCSBocasTest {
 			return;
 		}
 		Bocas bocas = service.getBucket("gcstest.bocas.derquinse.net");
-		LoadedBocasValue value = BocasExerciser.data();
-		assertFalse(bocas.contains(value.key()));
-		Optional<BocasValue> notFound = bocas.get(value.key());
+		MemoryByteSource value = BocasExerciser.data();
+		ByteString key = f.hash(value);
+		assertFalse(bocas.contains(key));
+		Optional<ByteSource> notFound = bocas.get(key);
 		assertFalse(notFound.isPresent());
-		System.out.printf("Size: %d\n", value.getSize());
+		System.out.printf("Size: %d\n", value.size());
 		bocas.put(value);
-		assertTrue(bocas.contains(value.key()));
-		Optional<BocasValue> found = bocas.get(value.key());
+		assertTrue(bocas.contains(key));
+		Optional<ByteSource> found = bocas.get(key);
 		assertTrue(found.isPresent());
 		BocasExerciser.check(value, found.get());
 	}

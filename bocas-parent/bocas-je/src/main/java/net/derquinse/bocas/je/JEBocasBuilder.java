@@ -18,11 +18,13 @@ package net.derquinse.bocas.je;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import static net.derquinse.bocas.BocasPreconditions.checkHash;
 
 import java.io.File;
 
 import net.derquinse.bocas.Bocas;
 import net.derquinse.bocas.BocasException;
+import net.derquinse.bocas.BocasHashFunction;
 
 import com.google.common.base.Objects;
 import com.sleepycat.je.DatabaseException;
@@ -44,6 +46,12 @@ public final class JEBocasBuilder {
 	private Boolean sharedCache;
 	/** Whether the database is read only. */
 	private Boolean readOnly;
+	/** Whether to use direct memory. */
+	private boolean direct = false;
+	/** Hash function. */
+	private BocasHashFunction function = BocasHashFunction.sha256();
+	/** Whether the direct memory flag has been set. */
+	private boolean functionSet = false;
 
 	JEBocasBuilder() {
 	}
@@ -121,6 +129,31 @@ public final class JEBocasBuilder {
 	}
 
 	/**
+	 * Specifies that direct memory should be used.
+	 * @return This builder.
+	 * @throws IllegalStateException if the flag has already been set.
+	 */
+	public JEBocasBuilder direct() {
+		checkState(!direct, "The direct memory flag has already been set");
+		this.direct = true;
+		return this;
+	}
+
+	/**
+	 * Sets the hash function to use.
+	 * @param function The hash function to use.
+	 * @return This builder.
+	 * @throws IllegalStateException if the hash function has already been set.
+	 */
+	public JEBocasBuilder hashFunction(BocasHashFunction function) {
+		checkState(!functionSet, "The direct memory flag has already been set");
+		checkHash(function);
+		this.function = function;
+		this.functionSet = true;
+		return this;
+	}
+
+	/**
 	 * Builds a new bucket.
 	 * @throws IllegalArgumentException if the argument is not an existing directory.
 	 * @throws BocasException if unable to create the environment or database.
@@ -144,7 +177,7 @@ public final class JEBocasBuilder {
 		ec.setSharedCache(Objects.firstNonNull(sharedCache, Boolean.FALSE));
 		try {
 			Environment e = new Environment(d, ec);
-			return new DefaultJEBocas(e, readOnly);
+			return new DefaultJEBocas(function, e, direct, readOnly);
 		} catch (DatabaseException e) {
 			throw new BocasException(e);
 		}

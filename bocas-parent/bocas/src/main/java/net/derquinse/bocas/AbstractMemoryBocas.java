@@ -15,7 +15,7 @@
  */
 package net.derquinse.bocas;
 
-import static net.derquinse.bocas.InternalUtils.checkLoader;
+import static net.derquinse.bocas.BocasPreconditions.checkLoader;
 
 import java.io.IOException;
 

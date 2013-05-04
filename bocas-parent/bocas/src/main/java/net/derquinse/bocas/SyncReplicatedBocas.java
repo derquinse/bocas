@@ -34,7 +34,7 @@ import com.google.common.io.ByteSource;
  * Bocas transformer that synchronously replicates operation in another bucket.
  * @author Andres Rodriguez.
  */
-final class SyncReplicatedBocas extends SkeletalBocas<ByteSource> {
+final class SyncReplicatedBocas extends SimpleSkeletalBocas {
 	/** Primary bucket. */
 	private final Bocas primary;
 	/** Replica bucket. */
@@ -51,11 +51,6 @@ final class SyncReplicatedBocas extends SkeletalBocas<ByteSource> {
 		checkArgument(primary.getHashFunction().equals(replica.getHashFunction()),
 				"The primary and replica hash functions must be the same");
 		this.checkBeforeWrite = checkBeforeWrite;
-	}
-
-	@Override
-	protected ByteSource transform(ByteSource value) {
-		return value;
 	}
 
 	/*

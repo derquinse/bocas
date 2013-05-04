@@ -20,6 +20,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import java.net.URI;
 
 import net.derquinse.bocas.BocasService;
+import net.derquinse.common.io.MemoryByteSourceLoader;
+import net.derquinse.common.jaxrs.ByteSourceBodyWriter;
 
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.WebResource;
@@ -42,6 +44,7 @@ public final class BocasClientFactory {
 	/** Constructor. */
 	private BocasClientFactory() {
 		ClientConfig config = new DefaultClientConfig();
+		config.getClasses().add(ByteSourceBodyWriter.class);
 		client = Client.create(config);
 		client.setFollowRedirects(true);
 	}
@@ -49,11 +52,12 @@ public final class BocasClientFactory {
 	/**
 	 * Creates a new repository client.
 	 * @param uri Service URI.
+	 * @param loader Memory loader to use.
 	 * @return The requested service client.
 	 */
-	public BocasService get(URI uri) {
+	public BocasService get(URI uri, MemoryByteSourceLoader loader) {
 		WebResource resource = client.resource(checkNotNull(uri, "The indexer service URI must be provided"));
-		return new BocasServiceClient(resource);
+		return new BocasServiceClient(resource, loader);
 	}
 
 }

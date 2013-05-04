@@ -34,7 +34,6 @@ public final class BocasServices extends NotInstantiable {
 	 * Creates a new memory based bucket.
 	 * @param function Hash function to use.
 	 * @param loader Memory loader to use.
-	 * @return
 	 */
 	public static Bocas memoryBucket(BocasHashFunction function, MemoryByteSourceLoader loader) {
 		return new MemoryBocas(function, loader);

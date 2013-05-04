@@ -29,16 +29,16 @@ import javax.annotation.PreDestroy;
 import javax.annotation.concurrent.GuardedBy;
 
 import net.derquinse.bocas.BocasException;
-import net.derquinse.bocas.BocasValue;
-import net.derquinse.bocas.LoadedBocasValue;
-import net.derquinse.bocas.SkeletalBocas;
+import net.derquinse.bocas.BocasHashFunction;
+import net.derquinse.bocas.SimpleSkeletalBocas;
 import net.derquinse.common.base.ByteString;
+import net.derquinse.common.io.MemoryByteSource;
 
 import com.google.common.annotations.Beta;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.io.ByteStreams;
+import com.google.common.io.ByteSource;
 import com.sleepycat.je.Database;
 import com.sleepycat.je.DatabaseConfig;
 import com.sleepycat.je.DatabaseEntry;
@@ -52,7 +52,7 @@ import com.sleepycat.je.Transaction;
  * @author Andres Rodriguez.
  */
 @Beta
-final class DefaultJEBocas extends SkeletalBocas {
+final class DefaultJEBocas extends SimpleSkeletalBocas {
 	/** Database name. */
 	private static final String DB_NAME = "BocasDB";
 	/** Database environment. */
@@ -61,6 +61,8 @@ final class DefaultJEBocas extends SkeletalBocas {
 	private final Database database;
 	/** Database closing lock. */
 	private final ReadWriteLock lock = new ReentrantReadWriteLock();
+	/** Whether to load entries in direct memory. */
+	private final boolean direct;
 	/** Whether the database is still open. */
 	@GuardedBy("lock")
 	private boolean open = true;
@@ -74,22 +76,23 @@ final class DefaultJEBocas extends SkeletalBocas {
 	}
 
 	/** Constructor. */
-	DefaultJEBocas(Environment e, boolean readOnly) {
+	DefaultJEBocas(BocasHashFunction function, Environment e, boolean direct, boolean readOnly) {
+		super(function);
 		this.environment = checkNotNull(e, "The environment must be provided");
 		DatabaseConfig dc = new DatabaseConfig();
 		dc.setAllowCreate(true);
 		dc.setTransactional(true);
 		dc.setReadOnly(readOnly);
 		this.database = e.openDatabase(null, DB_NAME, dc);
+		this.direct = direct;
 	}
 
 	/*
 	 * (non-Javadoc)
 	 * @see net.derquinse.bocas.SkeletalBocas#load(net.derquinse.bocas.BocasValue)
 	 */
-	@Override
-	protected LoadedBocasValue load(BocasValue value) {
-		return value.toLoaded();
+	private ByteSource load(DatabaseEntry entry) {
+		return MemoryByteSource.copyOf(direct, entry.getData());
 	}
 
 	/** Closes the database. */
@@ -130,7 +133,7 @@ final class DefaultJEBocas extends SkeletalBocas {
 		return new Tx<Boolean>() {
 			@Override
 			Boolean perform() throws IOException {
-				return read(key).isPresent();
+				return contains(key);
 			}
 		}.run().booleanValue();
 	}
@@ -148,7 +151,7 @@ final class DefaultJEBocas extends SkeletalBocas {
 				Set<ByteString> set = Sets.newHashSet();
 				for (ByteString key : keys) {
 					checkKey(key);
-					if (!set.contains(key) && read(key).isPresent()) {
+					if (!set.contains(key) && contains(key)) {
 						set.add(key);
 					}
 				}
@@ -162,11 +165,11 @@ final class DefaultJEBocas extends SkeletalBocas {
 	 * @see net.derquinse.bocas.Bocas#get(net.derquinse.common.base.ByteString)
 	 */
 	@Override
-	public Optional<BocasValue> get(final ByteString key) {
+	public Optional<ByteSource> get(final ByteString key) {
 		checkKey(key);
-		return new Tx<Optional<BocasValue>>() {
+		return new Tx<Optional<ByteSource>>() {
 			@Override
-			Optional<BocasValue> perform() throws IOException {
+			Optional<ByteSource> perform() throws IOException {
 				return read(key);
 			}
 		}.run();
@@ -177,16 +180,16 @@ final class DefaultJEBocas extends SkeletalBocas {
 	 * @see net.derquinse.bocas.Bocas#get(java.lang.Iterable)
 	 */
 	@Override
-	public Map<ByteString, BocasValue> get(final Iterable<ByteString> keys) {
+	public Map<ByteString, ByteSource> get(final Iterable<ByteString> keys) {
 		checkKeys(keys);
-		return new Tx<Map<ByteString, BocasValue>>() {
+		return new Tx<Map<ByteString, ByteSource>>() {
 			@Override
-			Map<ByteString, BocasValue> perform() throws IOException {
-				Map<ByteString, BocasValue> map = Maps.newHashMap();
+			Map<ByteString, ByteSource> perform() throws IOException {
+				Map<ByteString, ByteSource> map = Maps.newHashMap();
 				for (ByteString key : keys) {
 					checkKey(key);
 					if (!map.containsKey(key)) {
-						Optional<BocasValue> v = read(key);
+						Optional<ByteSource> v = read(key);
 						if (v.isPresent()) {
 							map.put(key, v.get());
 						}
@@ -200,10 +203,10 @@ final class DefaultJEBocas extends SkeletalBocas {
 	/*
 	 * (non-Javadoc)
 	 * @see net.derquinse.bocas.SkeletalBocas#put(net.derquinse.common.base.ByteString,
-	 * net.derquinse.bocas.LoadedBocasValue)
+	 * com.google.common.io.ByteSource)
 	 */
 	@Override
-	protected void put(final ByteString key, final LoadedBocasValue value) {
+	protected void put(final ByteString key, final ByteSource value) {
 		new Put() {
 			@Override
 			void put() throws IOException {
@@ -217,11 +220,11 @@ final class DefaultJEBocas extends SkeletalBocas {
 	 * @see net.derquinse.bocas.SkeletalBocas#putAll(java.util.Map)
 	 */
 	@Override
-	protected void putAll(final Map<ByteString, LoadedBocasValue> entries) {
+	protected void putAll(final Map<ByteString, ByteSource> entries) {
 		new Put() {
 			@Override
 			void put() throws IOException {
-				for (Entry<ByteString, LoadedBocasValue> entry : entries.entrySet()) {
+				for (Entry<ByteString, ByteSource> entry : entries.entrySet()) {
 					write(entry.getKey(), entry.getValue());
 				}
 			}
@@ -267,16 +270,28 @@ final class DefaultJEBocas extends SkeletalBocas {
 		}
 
 		/**
+		 * Checks whether an entry is contained in the database.
+		 * @param key Key to check.
+		 * @return True if the entry is found.
+		 */
+		final boolean contains(ByteString key) {
+			DatabaseEntry k = key(key);
+			DatabaseEntry v = new DatabaseEntry();
+			v.setPartial(0, 0, true);
+			return (database.get(tx, k, v, null) == OperationStatus.SUCCESS);
+		}
+
+		/**
 		 * Reads an entry from the database.
 		 * @param key Key to read.
 		 * @return The entry value if found.
 		 */
-		final Optional<BocasValue> read(ByteString key) {
+		final Optional<ByteSource> read(ByteString key) {
 			DatabaseEntry k = key(key);
 			DatabaseEntry v = new DatabaseEntry();
 			if (database.get(tx, k, v, null) == OperationStatus.SUCCESS) {
-				BocasValue bv = BocasValue.of(v.getData());
-				return Optional.of(bv);
+				ByteSource value = load(v);
+				return Optional.of(value);
 			}
 			return Optional.absent();
 		}
@@ -286,9 +301,9 @@ final class DefaultJEBocas extends SkeletalBocas {
 		 * @param key Entry key.
 		 * @param value Entry value.
 		 */
-		final void write(ByteString key, LoadedBocasValue value) throws IOException {
+		final void write(ByteString key, ByteSource value) throws IOException {
 			DatabaseEntry k = key(key);
-			DatabaseEntry v = new DatabaseEntry(ByteStreams.toByteArray(value));
+			DatabaseEntry v = new DatabaseEntry(value.read());
 			database.putNoOverwrite(tx, k, v);
 		}
 

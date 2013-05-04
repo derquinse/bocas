@@ -15,7 +15,6 @@
  */
 package net.derquinse.bocas;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static net.derquinse.bocas.InternalUtils.checkTransformedValue;
 import static net.derquinse.bocas.InternalUtils.checkValue;
 
@@ -41,7 +40,7 @@ public abstract class SkeletalBocas<T extends ByteSource> implements Bocas {
 
 	/** Constructor. */
 	protected SkeletalBocas(BocasHashFunction function) {
-		this.function = checkNotNull(function, "The Bocas hash function to use must be provided");
+		this.function = BocasPreconditions.checkHash(function);
 	}
 
 	/** Transforms a byte source before putting it. */

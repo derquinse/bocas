@@ -17,12 +17,16 @@ package net.derquinse.bocas.gcs;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static net.derquinse.bocas.BocasPreconditions.checkHash;
+import static net.derquinse.bocas.BocasPreconditions.checkLoader;
 
 import java.io.File;
 
 import net.derquinse.bocas.Bocas;
 import net.derquinse.bocas.BocasException;
+import net.derquinse.bocas.BocasHashFunction;
 import net.derquinse.bocas.BocasService;
+import net.derquinse.common.io.MemoryByteSourceLoader;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
 import com.google.api.client.http.HttpRequestFactory;
@@ -50,14 +54,20 @@ final class GCSBocasService implements BocasService {
 
 	/** Credential to use for the service. */
 	private final HttpRequestFactory factory;
+	/** Hash function. */
+	private final BocasHashFunction function;
+	/** Memory loader. */
+	private final MemoryByteSourceLoader loader;
 
 	/**
 	 * Constructor.
 	 * @throws BocasException
 	 */
-	GCSBocasService(String email, File p12) {
+	GCSBocasService(String email, File p12, BocasHashFunction function, MemoryByteSourceLoader loader) {
 		checkNotNull(email);
 		checkNotNull(p12);
+		this.function = checkHash(function);
+		this.loader = checkLoader(loader);
 		checkArgument(p12.exists());
 		try {
 			// Build service account credential.
@@ -76,7 +86,7 @@ final class GCSBocasService implements BocasService {
 	 */
 	@Override
 	public Bocas getBucket(String name) {
-		return new GCSBucket(factory, GCS_URL + name);
+		return new GCSBucket(factory, GCS_URL + name, function, loader);
 	}
 
 }

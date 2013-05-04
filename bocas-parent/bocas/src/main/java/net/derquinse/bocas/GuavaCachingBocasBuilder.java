@@ -16,7 +16,7 @@
 package net.derquinse.bocas;
 
 import static com.google.common.base.Preconditions.checkState;
-import static net.derquinse.bocas.InternalUtils.checkLoader;
+import static net.derquinse.bocas.BocasPreconditions.checkLoader;
 
 import java.util.concurrent.TimeUnit;
 

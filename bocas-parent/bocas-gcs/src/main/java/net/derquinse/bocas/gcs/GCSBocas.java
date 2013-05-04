@@ -17,8 +17,10 @@ package net.derquinse.bocas.gcs;
 
 import java.io.File;
 
+import net.derquinse.bocas.BocasHashFunction;
 import net.derquinse.bocas.BocasService;
 import net.derquinse.common.base.NotInstantiable;
+import net.derquinse.common.io.MemoryByteSourceLoader;
 
 /**
  * Factory class for Bocas repositories based on Google Cloud Storage.
@@ -32,10 +34,12 @@ public final class GCSBocas extends NotInstantiable {
 	 * Creates a new service using service account authentication.
 	 * @param email Account email address.
 	 * @param p12 Private key file.
+	 * @param function Hash function to use.
+	 * @param loader Memory loader to use.
 	 * @return The requested service.
 	 */
-	public static BocasService service(String email, File p12) {
-		return new GCSBocasService(email, p12);
+	public static BocasService service(String email, File p12, BocasHashFunction function, MemoryByteSourceLoader loader) {
+		return new GCSBocasService(email, p12, function, loader);
 	}
 
 }

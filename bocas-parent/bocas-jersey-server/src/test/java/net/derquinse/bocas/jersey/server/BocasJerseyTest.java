@@ -15,6 +15,8 @@
  */
 package net.derquinse.bocas.jersey.server;
 
+import static net.derquinse.bocas.BocasHashFunction.sha256;
+import static net.derquinse.common.io.MemoryByteSourceLoader.get;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Set;
@@ -23,9 +25,9 @@ import net.derquinse.bocas.Bocas;
 import net.derquinse.bocas.BocasExerciser;
 import net.derquinse.bocas.BocasService;
 import net.derquinse.bocas.BocasServices;
-import net.derquinse.bocas.BocasValue;
 import net.derquinse.bocas.jersey.client.BocasClientFactory;
 import net.derquinse.common.base.ByteString;
+import net.derquinse.common.io.MemoryByteSource;
 import net.derquinse.common.test.RandomSupport;
 
 import org.junit.Assert;
@@ -33,7 +35,8 @@ import org.junit.Test;
 import org.testng.internal.annotations.Sets;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.io.ByteStreams;
+import com.google.common.io.ByteSource;
+import com.sun.jersey.test.framework.AppDescriptor;
 import com.sun.jersey.test.framework.JerseyTest;
 import com.sun.jersey.test.framework.LowLevelAppDescriptor;
 
@@ -42,9 +45,14 @@ import com.sun.jersey.test.framework.LowLevelAppDescriptor;
  * @author Andres Rodriguez
  */
 public class BocasJerseyTest extends JerseyTest {
-	static final BocasService SERVER = BocasServices.shared(BocasServices.memoryBucket());
+	static final BocasService SERVER = BocasServices.shared(BocasServices.memoryBucket(sha256(), get()));
 
-	private static LowLevelAppDescriptor descriptor() {
+	public BocasJerseyTest() throws InterruptedException {
+		Thread.sleep(2000);
+	}
+
+	@Override
+	protected AppDescriptor configure() {
 		Set<Class<?>> set = Sets.newHashSet();
 		set.add(TestBocasResource.class);
 		Class<?>[] classes = new Class<?>[set.size()];
@@ -52,27 +60,19 @@ public class BocasJerseyTest extends JerseyTest {
 		return new LowLevelAppDescriptor.Builder(classes).build();
 	}
 
-	public BocasJerseyTest() throws InterruptedException {
-		super(descriptor());
-		Thread.sleep(2000);
-	}
-
 	@Test
 	public void test() throws Exception {
-		Bocas client = BocasClientFactory.create().get(getBaseURI()).getBucket("test");
+		Bocas client = BocasClientFactory.create().get(getBaseURI(), get()).getBucket("test");
+		// A simple test
 		byte[] data = RandomSupport.getBytes(3072);
-		ByteString key = client.put(BocasValue.of(ByteStreams.newInputStreamSupplier(data)));
+		ByteString key = client.put(MemoryByteSource.wrap(data));
 		assertTrue(SERVER.getBucket("test").contains(key));
 		assertTrue(client.contains(key));
-		BocasValue v = client.get(key).get();
-		Assert.assertArrayEquals(data, ByteStreams.toByteArray(v));
+		ByteSource v = client.get(key).get();
+		Assert.assertArrayEquals(data, v.read());
 		client.get(ImmutableSet.of(key));
-	}
-
-	//@Test
-	public void exercise() throws Exception {
-		Bocas client = BocasClientFactory.create().get(getBaseURI()).getBucket("test");
+		// Now excercise
 		BocasExerciser.exercise(client);
 	}
-
+	
 }

@@ -17,34 +17,24 @@ package net.derquinse.bocas;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import net.derquinse.common.base.NotInstantiable;
-
-import com.google.common.io.ByteSource;
+import net.derquinse.common.io.MemoryByteSourceLoader;
 
 /**
- * Package private internal utility functions.
+ * Additional preconditions.
  */
-final class InternalUtils extends NotInstantiable {
+public final class BocasPreconditions extends NotInstantiable {
 	/** Not instantiable. */
-	private InternalUtils() {
+	private BocasPreconditions() {
 	}
 
-	/** Converts an exception thrown during cache loading. */
-	static BocasException convertCacheException(Throwable t) {
-		Throwable cause = t.getCause();
-		if (cause != null) {
-			return new BocasException(cause);
-		} else {
-			return new BocasException(t);
-		}
+	/** Checks the hash function is provided. */
+	public static BocasHashFunction checkHash(BocasHashFunction function) {
+		return checkNotNull(function, "The Bocas hash function to use must be provided");
 	}
 
-	/** Checks the value to put has been provided. */
-	static <T extends ByteSource> T checkValue(T value) {
-		return checkNotNull(value, "The value to add can't be null");
+	/** Checks the memory loader is provided. */
+	public static MemoryByteSourceLoader checkLoader(MemoryByteSourceLoader loader) {
+		return checkNotNull(loader, "The memory loader must be provided");
 	}
 
-	/** Checks the transformed value to put has been provided. */
-	static <T extends ByteSource> T checkTransformedValue(T value) {
-		return checkNotNull(value, "The transformed value to add can't be null");
-	}
 }

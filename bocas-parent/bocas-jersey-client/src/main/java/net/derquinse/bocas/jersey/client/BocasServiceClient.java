@@ -18,6 +18,7 @@ package net.derquinse.bocas.jersey.client;
 import static com.google.common.base.Preconditions.checkNotNull;
 import net.derquinse.bocas.Bocas;
 import net.derquinse.bocas.BocasService;
+import net.derquinse.common.io.MemoryByteSourceLoader;
 
 import com.sun.jersey.api.client.WebResource;
 
@@ -28,14 +29,17 @@ import com.sun.jersey.api.client.WebResource;
 final class BocasServiceClient implements BocasService {
 	/** Root resource. */
 	private final WebResource resource;
+	/** Memory loader to use. */
+	private final MemoryByteSourceLoader loader;
 
-	BocasServiceClient(WebResource resource) {
+	BocasServiceClient(WebResource resource, MemoryByteSourceLoader loader) {
 		this.resource = checkNotNull(resource, "The root resource must be provided");
+		this.loader = checkNotNull(loader, "The memory loader must be provided");
 	}
 
 	@Override
 	public Bocas getBucket(String name) {
 		checkNotNull(name);
-		return new BocasClient(resource.path(name)); // TODO ping bucket.
+		return new BocasClient(resource.path(name), loader); // TODO ping bucket.
 	}
 }
