@@ -266,7 +266,7 @@ public class BocasResource {
 		return containsObjects(setFromBody(keys));
 	}
 
-	/** @see Bocas#put(ByteSource)) */
+	/** @see Bocas#put(ByteSource) */
 	@POST
 	@Consumes(MediaType.APPLICATION_OCTET_STREAM)
 	@Produces(MediaType.TEXT_PLAIN)
