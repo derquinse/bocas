@@ -3,7 +3,7 @@
 	<parent>
 		<artifactId>bocas-parent</artifactId>
 		<groupId>net.derquinse.bocas</groupId>
-		<version>1.2.1-SNAPSHOT</version>
+		<version>1.2.1</version>
 	</parent>
 	<artifactId>bocas</artifactId>
 	<name>Derquinse Bocas :: Core</name>
