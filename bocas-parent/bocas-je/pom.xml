@@ -12,7 +12,7 @@
 	<dependencies>
 		<dependency>
 			<groupId>net.derquinse.bocas</groupId>
-			<artifactId>bocas-jersey</artifactId>
+			<artifactId>bocas</artifactId>
 			<version>1.2.2-SNAPSHOT</version>
 		</dependency>
 		<dependency>

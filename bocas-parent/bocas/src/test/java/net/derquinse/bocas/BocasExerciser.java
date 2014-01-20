@@ -224,14 +224,16 @@ public final class BocasExerciser {
 			assertTrue(mk.isCompressed());
 		}
 		// Concurrent operation.
-		ExecutorService s = Executors.newFixedThreadPool(5);
-		for (int i = 0; i < tasks; i++) {
-			s.submit(new Task());
+		if (tasks > 0) {
+			ExecutorService s = Executors.newFixedThreadPool(5);
+			for (int i = 0; i < tasks; i++) {
+				s.submit(new Task());
+			}
+			s.shutdown();
+			while (!s.awaitTermination(5, TimeUnit.SECONDS))
+				;
+			assertTrue(ok);
 		}
-		s.shutdown();
-		while (!s.awaitTermination(5, TimeUnit.SECONDS))
-			;
-		assertTrue(ok);
 	}
 
 	private class Task implements Runnable {
