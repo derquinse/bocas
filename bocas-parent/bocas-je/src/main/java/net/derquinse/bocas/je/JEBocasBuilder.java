@@ -50,7 +50,7 @@ public final class JEBocasBuilder {
 	private boolean direct = false;
 	/** Hash function. */
 	private BocasHashFunction function = BocasHashFunction.sha256();
-	/** Whether the direct memory flag has been set. */
+	/** Whether the hash function has been set. */
 	private boolean functionSet = false;
 
 	JEBocasBuilder() {
