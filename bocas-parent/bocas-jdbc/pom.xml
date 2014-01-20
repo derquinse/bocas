@@ -1,0 +1,26 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>net.derquinse.bocas</groupId>
+		<artifactId>bocas-parent</artifactId>
+		<version>1.2.2-SNAPSHOT</version>
+	</parent>
+	<artifactId>bocas-jdbc</artifactId>
+	<name>Derquinse Bocas :: JDBC Back-end</name>
+	<description>Module containing the JDBC Back-end</description>
+	<dependencies>
+		<dependency>
+			<groupId>net.derquinse.bocas</groupId>
+			<artifactId>bocas</artifactId>
+			<version>1.2.2-SNAPSHOT</version>
+		</dependency>
+		<dependency>
+			<groupId>net.derquinse.bocas</groupId>
+			<artifactId>bocas</artifactId>
+			<version>1.2.2-SNAPSHOT</version>
+			<type>test-jar</type>
+			<scope>test</scope>
+		</dependency>
+	</dependencies>
+</project>
