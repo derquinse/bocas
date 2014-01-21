@@ -51,13 +51,13 @@ public class JDBCBocasTest {
 		test(JDBCBocasServices.newBuilder().build(ds));
 	}
 
-	//@Test
+	// @Test
 	public void mysql() throws Exception {
 		DataSource ds = new SingleConnectionDataSource("url", "user", "passwd", true);
 		Connection cnn = ds.getConnection();
 		cnn.createStatement().execute("CREATE TABLE BOCAS_TABLE(BOCAS_KEY BINARY(32) PRIMARY KEY, BOCAS_VALUE LONGBLOB)");
 		cnn.close();
-		test(JDBCBocasServices.newBuilder().build(ds));
+		test(JDBCBocasServices.newBuilder().dialect(JDBCBocasDialect.MYSQL).build(ds));
 	}
 
 }
