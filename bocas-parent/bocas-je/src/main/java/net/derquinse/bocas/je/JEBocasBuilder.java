@@ -26,7 +26,7 @@ import net.derquinse.bocas.Bocas;
 import net.derquinse.bocas.BocasException;
 import net.derquinse.bocas.BocasHashFunction;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.sleepycat.je.DatabaseException;
 import com.sleepycat.je.Environment;
 import com.sleepycat.je.EnvironmentConfig;
@@ -163,7 +163,7 @@ public final class JEBocasBuilder {
 		File d = new File(directory);
 		checkArgument(d.exists(), "The directory [%s] does not exist");
 		checkArgument(d.isDirectory(), "The provided file [%s] is not a directory");
-		final boolean readOnly = Objects.firstNonNull(this.readOnly, Boolean.FALSE);
+		final boolean readOnly = MoreObjects.firstNonNull(this.readOnly, Boolean.FALSE);
 		EnvironmentConfig ec = new EnvironmentConfig();
 		ec.setAllowCreate(true);
 		ec.setReadOnly(false);
@@ -174,7 +174,7 @@ public final class JEBocasBuilder {
 		if (cacheSize != null) {
 			ec.setCacheSize(cacheSize);
 		}
-		ec.setSharedCache(Objects.firstNonNull(sharedCache, Boolean.FALSE));
+		ec.setSharedCache(MoreObjects.firstNonNull(sharedCache, Boolean.FALSE));
 		try {
 			Environment e = new Environment(d, ec);
 			return new DefaultJEBocas(function, e, direct, readOnly);

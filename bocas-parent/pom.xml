@@ -3,24 +3,23 @@
 	<parent>
 		<artifactId>derquinse-common-project-parent</artifactId>
 		<groupId>net.derquinse</groupId>
-		<version>1.0.35</version>
+		<version>1.0.37</version>
 	</parent>
 	<groupId>net.derquinse.bocas</groupId>
 	<artifactId>bocas-parent</artifactId>
-	<version>1.2.2</version>
+	<version>1.2.3-SNAPSHOT</version>
 	<packaging>pom</packaging>
 	<name>Derquinse Bocas :: Parent POM</name>
 	<description>Parent POM for Derquinse Bocas Project</description>
 	<url>http://code.google.com/p/bocas/</url>
 	<scm>
-		<connection>scm:git:https://code.google.com/p/bocas/</connection>
-		<developerConnection>scm:git:https://code.google.com/p/bocas/</developerConnection>
-		<url>http://code.google.com/p/bocas/source/browse/</url>
-		<tag>bocas-parent-1.2.1</tag>
+		<connection>scm:git:https://github.com/derquinse/bocas.git</connection>
+		<developerConnection>scm:git:https://github.com/derquinse/bocas.git</developerConnection>
+		<url>https://github.com/derquinse/bocas</url>
 	</scm>
 	<issueManagement>
-		<system>Google Code</system>
-		<url>http://code.google.com/p/bocas/issues/list</url>
+		<system>GitHub</system>
+		<url>https://github.com/derquinse/bocas/issues</url>
 	</issueManagement>
 	<dependencyManagement>
 		<dependencies>

@@ -132,7 +132,7 @@ final class BocasClient implements Bocas {
 			object(resource.path(BocasResources.CATALOG), key).get(String.class);
 			return true;
 		} catch (UniformInterfaceException e) {
-			if (e.getResponse().getClientResponseStatus() == Status.NOT_FOUND) {
+			if (e.getResponse().getStatus() == Status.NOT_FOUND.getStatusCode()) {
 				return false;
 			}
 			throw exception(e);
@@ -153,7 +153,7 @@ final class BocasClient implements Bocas {
 			final String response = m.call(String.class);
 			return ImmutableSet.copyOf(BocasResources.response2List(response));
 		} catch (UniformInterfaceException e) {
-			if (e.getResponse().getClientResponseStatus() == Status.NOT_FOUND) {
+			if (e.getResponse().getStatus() == Status.NOT_FOUND.getStatusCode()) {
 				return ImmutableSet.of();
 			}
 			throw exception(e);
@@ -183,7 +183,7 @@ final class BocasClient implements Bocas {
 			ByteSource v = load(data);
 			return Optional.of(v);
 		} catch (UniformInterfaceException e) {
-			if (e.getResponse().getClientResponseStatus() == Status.NOT_FOUND) {
+			if (e.getResponse().getStatus() == Status.NOT_FOUND.getStatusCode()) {
 				return Optional.absent();
 			}
 			throw exception(e);
@@ -226,7 +226,7 @@ final class BocasClient implements Bocas {
 			}
 			return found;
 		} catch (UniformInterfaceException e) {
-			if (e.getResponse().getClientResponseStatus() == Status.NOT_FOUND) {
+			if (e.getResponse().getStatus() == Status.NOT_FOUND.getStatusCode()) {
 				return ImmutableMap.of();
 			}
 			throw exception(e);
