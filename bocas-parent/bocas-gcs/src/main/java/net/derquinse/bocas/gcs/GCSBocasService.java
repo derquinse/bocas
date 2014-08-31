@@ -29,35 +29,40 @@ import net.derquinse.bocas.BocasService;
 import net.derquinse.common.io.MemoryByteSourceLoader;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleCredential;
-import com.google.api.client.http.HttpRequestFactory;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.http.HttpTransport;
-import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
-import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.services.storage.Storage;
+import com.google.api.services.storage.StorageScopes;
+import com.google.common.collect.ImmutableSet;
 
 /**
  * Bocas repository based on Google Cloud Storage.
  * @author Andres Rodriguez.
  */
 final class GCSBocasService implements BocasService {
-	/** Base URL. */
-	private static final String GCS_URL = "http://storage.googleapis.com/";
-
-	/** Global configuration of Google Cloud Storage OAuth 2.0 scope. */
-	private static final String GCS_SCOPE = "https://www.googleapis.com/auth/devstorage.read_write";
-
 	/** Global instance of the HTTP transport. */
-	private static final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
+	private static HttpTransport HTTP_TRANSPORT;
 
 	/** Global instance of the JSON factory. */
-	private static final JsonFactory JSON_FACTORY = new GsonFactory();
+	private static JsonFactory JSON_FACTORY;
 
 	/** Credential to use for the service. */
-	private final HttpRequestFactory factory;
+	private final Storage storage;
 	/** Hash function. */
 	private final BocasHashFunction function;
 	/** Memory loader. */
 	private final MemoryByteSourceLoader loader;
+	
+	private static synchronized void init() {
+		try {
+			HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+			JSON_FACTORY = JacksonFactory.getDefaultInstance();
+		} catch(Exception e) {
+			throw new BocasException(e);
+		}
+	}
 
 	/**
 	 * Constructor.
@@ -69,12 +74,13 @@ final class GCSBocasService implements BocasService {
 		this.function = checkHash(function);
 		this.loader = checkLoader(loader);
 		checkArgument(p12.exists());
+		init();
 		try {
 			// Build service account credential.
 			GoogleCredential credential = new GoogleCredential.Builder().setTransport(HTTP_TRANSPORT)
-					.setJsonFactory(JSON_FACTORY).setServiceAccountId(email).setServiceAccountScopes(GCS_SCOPE)
+					.setJsonFactory(JSON_FACTORY).setServiceAccountId(email).setServiceAccountScopes(ImmutableSet.of(StorageScopes.DEVSTORAGE_READ_WRITE))
 					.setServiceAccountPrivateKeyFromP12File(p12).build();
-			this.factory = HTTP_TRANSPORT.createRequestFactory(credential);
+			this.storage = new Storage.Builder(HTTP_TRANSPORT, JSON_FACTORY, credential).setApplicationName("GCSBocasTest").build();
 		} catch (Exception e) {
 			throw new BocasException(e);
 		}
@@ -86,7 +92,7 @@ final class GCSBocasService implements BocasService {
 	 */
 	@Override
 	public Bocas getBucket(String name) {
-		return new GCSBucket(factory, GCS_URL + name, function, loader);
+		return new GCSBucket(storage, name, function, loader);
 	}
 
 }

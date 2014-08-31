@@ -20,7 +20,6 @@ import static net.derquinse.bocas.BocasPreconditions.checkLoader;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -31,28 +30,17 @@ import net.derquinse.bocas.SimpleSkeletalBocas;
 import net.derquinse.common.base.ByteString;
 import net.derquinse.common.io.MemoryByteSource;
 import net.derquinse.common.io.MemoryByteSourceLoader;
+import net.derquinse.common.io.MemoryOutputStream;
 
-import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-
-import com.google.api.client.http.GenericUrl;
-import com.google.api.client.http.HttpContent;
-import com.google.api.client.http.HttpHeaders;
-import com.google.api.client.http.HttpRequest;
-import com.google.api.client.http.HttpRequestFactory;
-import com.google.api.client.http.HttpResponse;
 import com.google.api.client.http.HttpResponseException;
 import com.google.api.client.http.InputStreamContent;
+import com.google.api.services.storage.Storage;
+import com.google.api.services.storage.model.StorageObject;
 import com.google.common.annotations.Beta;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.io.ByteSource;
-import com.google.common.io.Closeables;
-import com.google.common.io.Closer;
-import com.google.common.primitives.Ints;
 
 /**
  * A bocas bucket based on Google Cloud Storage.
@@ -60,14 +48,10 @@ import com.google.common.primitives.Ints;
  */
 @Beta
 final class GCSBucket extends SimpleSkeletalBocas {
-	/** Date formatter. */
-	private static final DateTimeFormatter RFC1123_DATE_FORMAT = DateTimeFormat
-			.forPattern("EEE, dd MMM yyyy HH:mm:ss 'GMT'").withLocale(Locale.US).withZone(DateTimeZone.UTC);
-
-	/** Request factory to use. */
-	private final HttpRequestFactory requestFactory;
-	/** Bucket URI (must not end in a slash). */
-	private final String bucketURI;
+	/** Storage service. */
+	private final Storage storage;
+	/** Bucket name. */
+	private final String bucket;
 	/** Memory loader to use. */
 	private final MemoryByteSourceLoader loader;
 
@@ -86,28 +70,20 @@ final class GCSBucket extends SimpleSkeletalBocas {
 	}
 
 	/** Constructor. */
-	GCSBucket(HttpRequestFactory requestFactory, String bucketURI, BocasHashFunction function,
-			MemoryByteSourceLoader loader) {
+	GCSBucket(Storage storage, String bucket, BocasHashFunction function, MemoryByteSourceLoader loader) {
 		super(function);
-		this.requestFactory = checkNotNull(requestFactory);
-		this.bucketURI = checkNotNull(bucketURI);
+		this.storage = checkNotNull(storage);
+		this.bucket = checkNotNull(bucket);
 		this.loader = checkLoader(loader);
 	}
 
-	private GenericUrl getObjectURI(ByteString key) {
-		return new GenericUrl(bucketURI + '/' + key.toHexString());
-	}
-
-	private HttpRequest decorate(HttpRequest request, Integer size) {
-		HttpHeaders headers = request.getHeaders();
-		headers.set("Host", "storage.googleapis.com");
-		headers.setDate(RFC1123_DATE_FORMAT.print(DateTime.now()));
-		headers.set("x-goog-api-version", "2");
-		if (size != null) {
-			headers.setContentLength(size.longValue());
-			headers.setContentType("application/octet-stream");
+	private Storage.Objects.Get getObjectRequest(final ByteString key) {
+		checkKey(key);
+		try {
+			return storage.objects().get(bucket, key.toHexString());
+		} catch (IOException e) {
+			throw new BocasException(e);
 		}
-		return request;
 	}
 
 	/*
@@ -126,14 +102,10 @@ final class GCSBucket extends SimpleSkeletalBocas {
 	@Override
 	public boolean contains(final ByteString key) {
 		checkKey(key);
+		final Storage.Objects.Get request = getObjectRequest(key);
 		try {
-			HttpRequest request = decorate(requestFactory.buildHeadRequest(getObjectURI(key)), null);
-			HttpResponse response = request.execute();
-			try {
-				return response.isSuccessStatusCode();
-			} finally {
-				response.disconnect();
-			}
+			StorageObject obj = request.execute();
+			return obj != null;
 		} catch (HttpResponseException e) {
 			if (e.getStatusCode() == 404) {
 				return false;
@@ -150,6 +122,7 @@ final class GCSBucket extends SimpleSkeletalBocas {
 	 */
 	@Override
 	public Set<ByteString> contained(Iterable<ByteString> keys) {
+		// TODO: check batch requests
 		Set<ByteString> input = checkKeys(keys);
 		Set<ByteString> set = Sets.newHashSet();
 		for (ByteString key : input) {
@@ -167,27 +140,12 @@ final class GCSBucket extends SimpleSkeletalBocas {
 	@Override
 	public Optional<ByteSource> get(ByteString key) {
 		checkKey(key);
+		final Storage.Objects.Get request = getObjectRequest(key);
+		final MemoryOutputStream os = loader.openStream();
 		try {
-			HttpRequest request = decorate(requestFactory.buildGetRequest(getObjectURI(key)), null);
-			HttpResponse response = request.execute();
-			try {
-				if (response.isSuccessStatusCode()) {
-					InputStream is = response.getContent();
-					if (is == null) {
-						return Optional.absent();
-					}
-					Closer closer = Closer.create();
-					try {
-						ByteSource value = loader.load(closer.register(is));
-						return Optional.of(value);
-					} finally {
-						Closeables.closeQuietly(is);
-					}
-				}
-			} finally {
-				response.disconnect();
-			}
-			return Optional.absent();
+			// TODO: check direct downloads.
+			request.executeMediaAndDownloadTo(os);
+			return Optional.of((ByteSource) os.toByteSource());
 		} catch (HttpResponseException e) {
 			if (e.getStatusCode() == 404) {
 				return Optional.absent();
@@ -195,6 +153,8 @@ final class GCSBucket extends SimpleSkeletalBocas {
 			throw new BocasException(e);
 		} catch (IOException e) {
 			throw new BocasException(e);
+		} finally {
+			os.close();
 		}
 	}
 
@@ -220,19 +180,29 @@ final class GCSBucket extends SimpleSkeletalBocas {
 
 	@Override
 	protected void put(final ByteString key, final ByteSource value) {
+		boolean ok = false;
 		try {
-			final MemoryByteSource mbs;
-			if (value instanceof MemoryByteSource) {
-				mbs = (MemoryByteSource) value;
-			} else {
-				mbs = loader.load(value);
+			final InputStream is = value.openStream();
+			try {
+				InputStreamContent content = new InputStreamContent("application/octet-stream", is);
+				if (value instanceof MemoryByteSource) {
+					content.setLength(value.size());
+				}
+				Storage.Objects.Insert request = storage.objects().insert(bucket, null, content);
+				request.setName(key.toHexString());
+				// TODO: check direct upload
+				request.execute();
+				ok = true;
+			} catch (IOException e) {
+				throw new BocasException(e);
+			} finally {
+				is.close();
 			}
-			HttpContent content = new InputStreamContent("application/octet-stream", mbs.openStream());
-			HttpRequest request = decorate(requestFactory.buildPutRequest(getObjectURI(key), content),
-					Ints.saturatedCast(mbs.size()));
-			request.execute();
 		} catch (IOException e) {
-			throw new BocasException(e);
+			// ok is true if the exception is thrown during clean up.
+			if (!ok) {
+				throw new BocasException(e);
+			}
 		}
 	}
 

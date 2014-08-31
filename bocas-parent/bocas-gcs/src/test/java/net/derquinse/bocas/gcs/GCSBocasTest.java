@@ -17,6 +17,9 @@ package net.derquinse.bocas.gcs;
 
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
+
+import java.io.File;
+
 import net.derquinse.bocas.Bocas;
 import net.derquinse.bocas.BocasExerciser;
 import net.derquinse.bocas.BocasHashFunction;
@@ -36,15 +39,19 @@ import com.google.common.io.ByteSource;
  */
 public class GCSBocasTest {
 	private final BocasHashFunction f = BocasHashFunction.sha256();
-	@SuppressWarnings("unused")
 	private final MemoryByteSourceLoader loader = MemoryByteSourceLoader.get();
 	private final BocasService service;
 
 	public GCSBocasTest() throws Exception {
-		// String email = "";
-		// File p12 = new File("");
-		// service = GCSBocas.service(email, p12, f, loader);
-		service = null;
+		// Fill with test project data to perform actual testing.
+		String email = "";
+		File p12 = new File("path_to_key.p12");
+		if (email != null && email.length() > 1 && p12 != null) {
+			service = GCSBocas.service(email, p12, f, loader);
+		}
+		else {
+			service = null;
+		}
 	}
 
 	@Test
