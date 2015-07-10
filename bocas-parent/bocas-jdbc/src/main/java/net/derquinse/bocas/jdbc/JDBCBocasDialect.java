@@ -43,12 +43,20 @@ public enum JDBCBocasDialect {
 
 	},
 
+	PGSQL {
+		@Override
+		InputStream loadValue(ResultSet rs, int index) throws SQLException {
+			return rs.getBinaryStream(index);
+		}
+
+	},
+
 	H2 {
 		@Override
 		InputStream loadValue(ResultSet rs, int index) throws SQLException {
 			return rs.getBinaryStream(index);
 		}
-		
+
 		@Override
 		void setValue(PreparedStatement ps, int index, ByteSource value) throws SQLException {
 			try {
@@ -75,7 +83,7 @@ public enum JDBCBocasDialect {
 
 	/** Loads a value from a result set (internal). */
 	abstract InputStream loadValue(ResultSet rs, int index) throws SQLException;
-	
+
 	/** Puts a key in a prepared statement parameter. */
 	void setKey(PreparedStatement ps, int index, ByteString key) throws SQLException {
 		ps.setBytes(index, key.toByteArray());
@@ -89,5 +97,5 @@ public enum JDBCBocasDialect {
 			throw new SQLException(e);
 		}
 	}
-	
+
 }
