@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>net.derquinse.bocas</groupId>
 		<artifactId>bocas-parent</artifactId>
-		<version>1.2.3</version>
+		<version>1.2.4</version>
 	</parent>
 	<artifactId>bocas-jdbc</artifactId>
 	<name>Derquinse Bocas :: JDBC Back-end</name>
@@ -13,7 +13,7 @@
 		<dependency>
 			<groupId>net.derquinse.bocas</groupId>
 			<artifactId>bocas</artifactId>
-			<version>1.2.3</version>
+			<version>1.2.4</version>
 		</dependency>
 		<dependency>
 			<groupId>net.derquinse</groupId>
@@ -24,7 +24,7 @@
 		<dependency>
 			<groupId>net.derquinse.bocas</groupId>
 			<artifactId>bocas</artifactId>
-			<version>1.2.3</version>
+			<version>1.2.4</version>
 			<type>test-jar</type>
 			<scope>test</scope>
 		</dependency>
