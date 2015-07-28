@@ -45,6 +45,17 @@ public enum JDBCBocasDialect {
 
 	PGSQL {
 		@Override
+		ByteString getKey(ResultSet rs, int index) throws SQLException {
+			final String hex = rs.getString(index);
+			return hex != null ? ByteString.fromHexString(hex) : null;
+		}
+		
+		@Override
+		void setKey(PreparedStatement ps, int index, ByteString key) throws SQLException {
+			ps.setString(index, key.toHexString());
+		}
+		
+		@Override
 		InputStream loadValue(ResultSet rs, int index) throws SQLException {
 			return rs.getBinaryStream(index);
 		}
